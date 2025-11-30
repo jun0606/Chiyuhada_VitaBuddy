@@ -265,7 +265,7 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
                         show: true,
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.1),
+                        ).colorScheme.primary.withAlpha(26), // 0.1 opacity
                       ),
                       dotData: const FlDotData(show: true),
                     ),

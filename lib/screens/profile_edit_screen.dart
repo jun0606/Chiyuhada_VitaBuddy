@@ -229,7 +229,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withAlpha(26), // 0.1 opacity
                       blurRadius: 10,
                       offset: const Offset(0, -2),
                     ),
