@@ -66,9 +66,9 @@ class EnhancedCalorieGauge extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withAlpha(26), // 0.1 opacity
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border: Border.all(color: Colors.red.withAlpha(77)), // 0.3 opacity
                   ),
                   child: Row(
                     children: [
@@ -132,7 +132,7 @@ ${netCalories >= 0 ? '현재 칼로리' : '현재 칼로리'}: ${netCalories.toI
                       widthFactor: min(displayIntakePercentage, 1.0),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.3), // 흐릿한 회색
+                          color: Colors.grey.withAlpha(77), // 흐릿한 회색
                           borderRadius: BorderRadius.circular(height / 2),
                         ),
                       ),
@@ -151,7 +151,7 @@ ${netCalories >= 0 ? '현재 칼로리' : '현재 칼로리'}: ${netCalories.toI
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: status.color.withOpacity(0.4),
+                              color: status.color.withAlpha(102), // 0.4 opacity
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -206,9 +206,9 @@ ${netCalories >= 0 ? '현재 칼로리' : '현재 칼로리'}: ${netCalories.toI
   List<Color> _getGradientColors(CalorieStatus status) {
     final baseColor = status.color;
     return [
-      baseColor.withOpacity(0.7),
+      baseColor.withAlpha(179), // 0.7 opacity
       baseColor,
-      baseColor.withOpacity(0.9),
+      baseColor.withAlpha(230), // 0.9 opacity
     ];
   }
 }

@@ -144,13 +144,13 @@ class _GaugePainter extends CustomPainter {
     // 2. 배경 기둥 (육각형) 그리기
     final Path bgPath = _createHexagonPath(size, 0);
     final Paint bgPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.1)
+      ..color = Colors.grey.withAlpha(26) // 0.1 opacity
       ..style = PaintingStyle.fill;
     canvas.drawPath(bgPath, bgPaint);
 
     // 테두리
     final Paint borderPaint = Paint()
-      ..color = baseColor.withOpacity(0.3)
+      ..color = baseColor.withAlpha(77) // 0.3 opacity
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawPath(bgPath, borderPaint);
@@ -175,8 +175,8 @@ class _GaugePainter extends CustomPainter {
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
         colors: [
-          baseColor.withOpacity(0.8),
-          baseColor.withOpacity(0.4),
+          baseColor.withAlpha(204), // 0.8 opacity
+          baseColor.withAlpha(102), // 0.4 opacity
         ],
       ).createShader(rect);
 
@@ -189,7 +189,7 @@ class _GaugePainter extends CustomPainter {
     for (var particle in particles) {
       // 채워진 영역 내에 있는 파티클만 그림
       if (particle.y >= size.height - fillHeight) {
-        particlePaint.color = Colors.white.withOpacity(particle.opacity);
+        particlePaint.color = Colors.white.withAlpha((particle.opacity * 255).toInt());
         canvas.drawCircle(Offset(particle.x, particle.y), particle.size, particlePaint);
       }
     }

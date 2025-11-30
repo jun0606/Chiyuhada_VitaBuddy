@@ -104,7 +104,7 @@ class ExerciseCard extends StatelessWidget {
     }
 
     return CircleAvatar(
-      backgroundColor: color.withOpacity(0.2),
+      backgroundColor: color.withAlpha(51), // 0.2 opacity
       child: Icon(icon, color: color),
     );
   }
