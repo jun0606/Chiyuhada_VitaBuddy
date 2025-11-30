@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/app_provider.dart';
 import '../services/database_service.dart';
 import '../utils/app_colors.dart';
 
@@ -130,7 +128,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> with SingleTi
           child: ListTile(
             leading: const Icon(Icons.restaurant, color: Colors.orange),
             title: Text(item['food_name'] ?? '알 수 없는 음식'),
-            subtitle: Text('${item['time'].toString().substring(11, 16)}'),
+            subtitle: Text(item['time'].toString().substring(11, 16)),
             trailing: Text(
               '${(item['calories'] as double).toInt()} kcal',
               style: const TextStyle(fontWeight: FontWeight.bold),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:chiyuhada_vita_buddy/models/workout_data.dart';
 
 /// 운동 기록 카드 위젯
 class ExerciseCard extends StatelessWidget {

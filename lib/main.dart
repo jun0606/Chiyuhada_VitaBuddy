@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'providers/app_provider.dart';
 import 'screens/splash_screen.dart';
-import 'screens/polygon_test_screen.dart'; // 검증용 임포트
+// 검증용 임포트
 import 'services/notification_service.dart'; // 알림 서비스
 
 void main() async {

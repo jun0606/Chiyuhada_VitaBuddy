@@ -7,7 +7,6 @@ import '../services/database_service.dart';
 import '../services/notification_service.dart';
 import '../services/data_migration_service.dart';
 import '../services/calorie_state_calculator.dart';
-import '../utils/calorie_calculator.dart';
 import '../services/background_calorie_service.dart';
 import '../services/health_data_service.dart';
 import '../models/calorie_status.dart';
@@ -16,9 +15,7 @@ import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
 import '../avatar/avatar_animations.dart';
 import '../avatar/face_expressions.dart';
-import '../avatar/avatar_calculations.dart';
 import '../avatar/clothing_colors.dart';
-import '../avatar/avatar_body_proportions.dart';
 import '../avatar/body_poses.dart';
 import 'dart:developer' as developer;
 
@@ -58,7 +55,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   
   // 자동 표정 로테이션
   Timer? _expressionTimer;
-  bool _autoRotationEnabled = true;
+  final bool _autoRotationEnabled = true;
   
   // 플래시 효과 이벤트
   String? _flashEvent; // 'food' 또는 'exercise'
@@ -341,7 +338,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
         (sum, record) => sum + (record['duration_minutes'] as int? ?? 0),
       );
       
-      developer.log('📊 칼로리 로드: 섭취 ${_intakeCalories.toInt()}, 운동 ${_exerciseBurnedCalories.toInt()}, 운동시간 ${_exerciseTotalMinutes}분');
+      developer.log('📊 칼로리 로드: 섭취 ${_intakeCalories.toInt()}, 운동 ${_exerciseBurnedCalories.toInt()}, 운동시간 $_exerciseTotalMinutes분');
       
       // 🎭 칼로리 로드 후 아바타 상태 업데이트
       _updateAvatarByCalorieStatus();
@@ -654,25 +651,6 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       setExpression(FaceExpressionType.refuse, autoReturn: true);
       setPose(BodyPose.refuse, autoReturn: true);
     }
-  }
-
-  /// 웰컴 그리팅 트리거 (앱 실행 시)
-  void triggerWelcomeGreeting() {
-    developer.log('👋 웰컴 그리팅 시작');
-    
-    // 강제로 인사 포즈 설정
-    setPose(BodyPose.greeting);
-    setExpression(FaceExpressionType.greeting); // FaceExpressionType.greeting이 없으면 happy 사용 고려
-    
-    // 자동 로테이션 일시 중지
-    resetExpressionTimer();
-    
-    // 3초 후 정상 상태로 복귀
-    Future.delayed(const Duration(seconds: 3), () {
-      developer.log('👋 웰컴 그리팅 종료 - 상태 복귀');
-      _updateAvatarByCalorieStatus();
-      startAutoExpressionRotation(); // 로테이션 재개
-    });
   }
 
   Widget buildAvatarPreviewWidget({

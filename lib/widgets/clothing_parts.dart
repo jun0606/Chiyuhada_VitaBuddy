@@ -1,6 +1,4 @@
-import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import '../avatar/body_measurements.dart';
 import 'avatar_parts.dart';
 
 /// 스포츠 브라

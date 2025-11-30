@@ -116,7 +116,7 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${count}개의 운동 데이터 동기화 완료'),
+            content: Text('✅ $count개의 운동 데이터 동기화 완료'),
             backgroundColor: Colors.green,
           ),
         );

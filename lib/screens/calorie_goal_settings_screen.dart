@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-import 'dart:math';
 
 class CalorieGoalSettingsScreen extends StatefulWidget {
   const CalorieGoalSettingsScreen({super.key});

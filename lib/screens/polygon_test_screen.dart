@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
-import '../avatar/avatar_animator.dart';
 import '../avatar/body_poses.dart';
 import '../avatar/face_expressions.dart';
 

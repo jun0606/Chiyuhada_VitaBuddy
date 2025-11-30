@@ -1,6 +1,6 @@
 /// 아바타 체형 계산 유틸리티 클래스
+library;
 import 'package:flutter/material.dart';
-import 'body_measurements.dart';
 import 'body_joint.dart';
 
 /// 호흡 애니메이션 파라미터 클래스

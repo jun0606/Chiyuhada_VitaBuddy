@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode 사용
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-import '../widgets/calorie_indicator.dart';
 import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
-import '../avatar/avatar_animations.dart';
 import '../services/database_service.dart'; // 데이터베이스 서비스
 import 'food_input_screen.dart';
 import 'weight_record_screen.dart';
@@ -381,29 +379,6 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          
-          // ⚡ 플래시 효과 오버레이 (임시 비활성화)
-          /*
-          Consumer<AppProvider>(
-            builder: (context, provider, child) {
-              if (provider.flashEvent == null) return const SizedBox();
-              
-              final flashColor = provider.flashEvent == 'food'
-                  ? Colors.green.withOpacity(0.3)
-                  : Colors.blue.withOpacity(0.3);
-              
-              return TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 200),
-                tween: Tween(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Container(
-                    color: flashColor.withOpacity(value * 0.3),
-                  );
-                },
-              );
-            },
-          ),
-          */
         ],
       ),
     );

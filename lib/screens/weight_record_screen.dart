@@ -141,8 +141,8 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
 
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddWeightDialog(),
-        child: const Icon(Icons.add),
         tooltip: '체중 기록 추가',
+        child: const Icon(Icons.add),
       ),
     );
   }

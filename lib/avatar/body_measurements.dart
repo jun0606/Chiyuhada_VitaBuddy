@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'clothing_colors.dart';
 
 enum LifestylePattern {

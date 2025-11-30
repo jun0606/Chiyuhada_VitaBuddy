@@ -310,7 +310,7 @@ class _EnhancedProfileSetupScreenState
           Text('활동 수준', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _activityLevel,
+            initialValue: _activityLevel,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
             ),
@@ -411,7 +411,7 @@ class _EnhancedProfileSetupScreenState
                 ),
               ),
             );
-          }).toList(),
+          }),
 
           const SizedBox(height: 16),
                     OutlinedButton.icon(
@@ -505,7 +505,7 @@ class _EnhancedProfileSetupScreenState
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
