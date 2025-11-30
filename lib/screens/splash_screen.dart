@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
                 Text(
                   '건강한 삶의 동반자',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black.withOpacity(0.8),
+                    color: Colors.black.withAlpha(204), // 0.8 opacity
                   ),
                 ),
                 const SizedBox(height: 48),
