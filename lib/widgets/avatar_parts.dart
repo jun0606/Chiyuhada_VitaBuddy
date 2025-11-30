@@ -23,7 +23,7 @@ abstract class BodyPart extends PositionComponent {
     canvas.drawPath(
       path.shift(const Offset(2, 2)),
       Paint()
-        ..color = Colors.black.withOpacity(0.12)
+        ..color = Colors.black.withAlpha(31)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0),
     );
   }
@@ -432,7 +432,7 @@ class FacePart extends BodyPart {
   // ✨ 반짝임 이펙트 (환영)
   void _drawGreetingSparkles(Canvas canvas, double headSize, Offset centerOffset) {
     final sparklePaint = Paint()
-      ..color = const Color(0xFFFFD700).withOpacity(0.8)  // 금색
+      ..color = const Color(0xFFFFD700).withAlpha(204)  // 금색
       ..style = PaintingStyle.fill;
     
     final positions = [
@@ -450,11 +450,11 @@ class FacePart extends BodyPart {
   // 💕 하트 이펙트 (환영)
   void _drawGreetingHearts(Canvas canvas, double headSize, Offset centerOffset) {
     final heartPaint = Paint()
-      ..color = const Color(0xFFFFB6C1).withOpacity(0.5)  // 연한 베이비 핑크 (부드럽게)
+      ..color = const Color(0xFFFFB6C1).withAlpha(128)  // 연한 베이비 핑크 (부드럽게)
       ..style = PaintingStyle.fill;
     
     final heartOutlinePaint = Paint()
-      ..color = const Color(0xFFFF69B4).withOpacity(0.8)  // 외곽선도 부드럽게
+      ..color = const Color(0xFFFF69B4).withAlpha(204)  // 외곽선도 부드럽게
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5; // 두께 약간 감소
     
@@ -531,7 +531,7 @@ class FacePart extends BodyPart {
   // 💧 땀방울 (과식) - 극대화: 5개
   void _drawSweatDrops(Canvas canvas, double headSize, Offset centerOffset) {
     final sweatPaint = Paint()
-      ..color = Colors.blue.withOpacity(0.7)
+      ..color = Colors.blue.withAlpha(179)
       ..style = PaintingStyle.fill;
     
     // 이마와 얼굴에 땀방울 5개 (더 잘 보이게)
@@ -574,7 +574,7 @@ class FacePart extends BodyPart {
     canvas.drawCircle(
       center + Offset(-size * 0.2, -size * 0.3),
       size * 0.3,
-      Paint()..color = Colors.white.withOpacity(0.95)
+      Paint()..color = Colors.white.withAlpha(242)
     );
   }
 
@@ -606,7 +606,7 @@ class FacePart extends BodyPart {
   // 🤤 침(군침) (배고픔) - 극대화: 3개
   void _drawDrool(Canvas canvas, double headSize, Offset centerOffset) {
     final droolPaint = Paint()
-      ..color = Colors.blue.withOpacity(0.5)
+      ..color = Colors.blue.withAlpha(128)
       ..style = PaintingStyle.fill;
     
     final mouthY = centerOffset.dy + headSize * 0.4;
@@ -716,7 +716,7 @@ class FacePart extends BodyPart {
   // 😋 볼 홍조 (배부름)
   void _drawCheekBlush(Canvas canvas, double headSize, Offset centerOffset) {
     final blushPaint = Paint()
-      ..color = Colors.pink.withOpacity(0.3)
+      ..color = Colors.pink.withAlpha(77)
       ..style = PaintingStyle.fill;
     
     final blushY = centerOffset.dy + headSize * 0.1;
@@ -739,7 +739,7 @@ class FacePart extends BodyPart {
   // 😴 다크서클 (피곤) - 강화
   void _drawDarkCircles(Canvas canvas, double headSize, Offset centerOffset) {
     final circlePaint = Paint()
-      ..color = Colors.grey.withOpacity(0.6)  // 0.4 → 0.6 더 진하게
+      ..color = Colors.grey.withAlpha(153)  // 0.4 → 0.6 더 진하게
       ..style = PaintingStyle.fill;
     
     final eyeY = centerOffset.dy - headSize * 0.1;
@@ -787,7 +787,7 @@ class FacePart extends BodyPart {
   void _drawStuffedExtras(Canvas canvas, double headSize, Offset centerOffset) {
     // 🆕 빨간 얼굴 오버레이
     final redFacePaint = Paint()
-      ..color = Colors.red.withOpacity(0.2)
+      ..color = Colors.red.withAlpha(51)
       ..style = PaintingStyle.fill;
     
     canvas.drawCircle(
@@ -860,7 +860,7 @@ class FacePart extends BodyPart {
   void _drawRefuseExtras(Canvas canvas, double headSize, Offset centerOffset) {
     // 🆕 볼록한 볼 (핑크색 원)
     final puffyPaint = Paint()
-      ..color = Colors.pink.withOpacity(0.4)
+      ..color = Colors.pink.withAlpha(102)
       ..style = PaintingStyle.fill;
     
     final cheekY = centerOffset.dy + headSize * 0.15;
@@ -1144,7 +1144,7 @@ class FacePart extends BodyPart {
             canvas, 
             center + Offset(eyeSize * 0.15, -eyeSize * 0.15), // 눈동자 우상단
             eyeSize * 0.35, // 적절한 크기
-            Paint()..color = Colors.white.withOpacity(0.9)..style = PaintingStyle.fill
+            Paint()..color = Colors.white.withAlpha(230)..style = PaintingStyle.fill
           );
         }
         break;
@@ -1304,7 +1304,7 @@ class FacePart extends BodyPart {
     
     // 얇은 검은색/갈색 입술
     final lipPaint = Paint()
-      ..color = const Color(0xFF8B7355).withOpacity(0.6)  // 피부색에 가까운 갈색
+      ..color = const Color(0xFF8B7355).withAlpha(153)  // 피부색에 가까운 갈색
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
@@ -1511,8 +1511,8 @@ class CheekPart extends BodyPart {
       // 1. 과체중/비만: 입체적인 볼살 (유방처럼 둥근 음영)
       
       // 기본 살색 베이스 (약간 어두운 톤으로 그림자 역할)
-      final shadowColor = const Color(0xFFD2B48C).withOpacity(0.6); // Tan color (진하게)
-      final highlightColor = const Color(0xFFFFE4E1).withOpacity(0.4); // MistyRose
+      final shadowColor = const Color(0xFFD2B48C).withAlpha(153); // Tan color (진하게)
+      final highlightColor = const Color(0xFFFFE4E1).withAlpha(102); // MistyRose
       
       // 그라데이션
       final gradient = RadialGradient(
@@ -1536,7 +1536,7 @@ class CheekPart extends BodyPart {
       );
       
       final bottomShadowPaint = Paint()
-        ..color = Colors.black.withOpacity(0.15) // 그림자도 약간 진하게
+        ..color = Colors.black.withAlpha(38) // 그림자도 약간 진하게
         ..style = PaintingStyle.stroke
         ..strokeWidth = cheekSize * 0.2
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
@@ -1546,7 +1546,7 @@ class CheekPart extends BodyPart {
     } else {
       // 3. 정상/저체중: 기존의 은은한 홍조 (선명하게)
       final cheekPaint = Paint()
-        ..color = const Color(0xFFFF9E80).withOpacity(0.6) // 0.4 → 0.6 (진하게)
+        ..color = const Color(0xFFFF9E80).withAlpha(153) // 0.4 → 0.6 (진하게)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0); // 5.0 → 3.0 (또렷하게)
       
       canvas.drawCircle(center, cheekSize, cheekPaint);
@@ -1555,7 +1555,7 @@ class CheekPart extends BodyPart {
     // 😊 표정이 smile일 때 볼에 붉은 기 추가 (여성만)
     if (measurements.gender == 'female' && mouthState == MouthState.smile) {
       final blushPaint = Paint()
-        ..color = const Color(0xFFFF1493).withOpacity(0.6)
+        ..color = const Color(0xFFFF1493).withAlpha(153)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
       
       canvas.drawCircle(
@@ -1611,14 +1611,14 @@ class EarPart extends BodyPart {
     );
     
     final innerPaint = Paint()
-      ..color = paint.color.withOpacity(0.5)
+      ..color = paint.color.withAlpha(128)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawPath(innerPath, innerPaint);
     
     // 3. 귓불 (아래쪽 둥근 부분 강조)
     final earlobePaint = Paint()
-      ..color = paint.color.withOpacity(0.3)
+      ..color = paint.color.withAlpha(77)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
     
     canvas.drawCircle(
