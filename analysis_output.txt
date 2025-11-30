@@ -1,0 +1,48 @@
+Analyzing avatar...
+
+warning - avatar_animations.dart:5:8 - Unused import: 'face_expressions.dart'. Try removing the import directive. - unused_import
+warning - avatar_animations.dart:186:7 - This default clause is covered by the previous cases. Try removing the default clause, or restructuring the preceding patterns. - unreachable_switch_default
+warning - avatar_animator.dart:2:8 - Unused import: 'package:flame/components.dart'. Try removing the import directive. - unused_import
+warning - avatar_animator.dart:3:8 - Unused import: 'package:flutter/material.dart'. Try removing the import directive. - unused_import
+warning - avatar_calculations.dart:3:8 - Unused import: 'body_measurements.dart'. Try removing the import directive. - unused_import
+warning - avatar_calculations.dart:207:11 - The value of the local variable 'rootJoint' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:1:8 - Unused import: 'dart:developer'. Try removing the import directive. - unused_import
+warning - base_avatar_renderer.dart:8:8 - Unused import: 'avatar_calculations.dart'. Try removing the import directive. - unused_import
+warning - base_avatar_renderer.dart:9:8 - Unused import: 'coordinate_logger.dart'. Try removing the import directive. - unused_import
+warning - base_avatar_renderer.dart:259:13 - The value of the local variable 'endPoint' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:605:11 - The value of the local variable 'scale' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:621:11 - The value of the local variable 'hipScale' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:622:11 - The value of the local variable 'hipLeft' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:623:11 - The value of the local variable 'hipRight' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:633:11 - The value of the local variable 'correctedHipLeft' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:634:11 - The value of the local variable 'correctedHipRight' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:763:11 - The value of the local variable 'scaleHip' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:1051:11 - The value of the local variable 'hipScale' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:1061:11 - The value of the local variable 'correctedHipLeft' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:1062:11 - The value of the local variable 'correctedHipRight' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - base_avatar_renderer.dart:1137:11 - The value of the local variable 'baseLowerBellyHeight' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - body_measurements.dart:1:8 - Unused import: 'dart:math'. Try removing the import directive. - unused_import
+warning - coordinate_logger.dart:4:8 - Unused import: 'body_measurements.dart'. Try removing the import directive. - unused_import
+warning - face_expressions.dart:108:7 - This default clause is covered by the previous cases. Try removing the default clause, or restructuring the preceding patterns. - unreachable_switch_default
+   info - avatar_calculations.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+   info - base_avatar_renderer.dart:123:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - base_avatar_renderer.dart:190:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - base_avatar_renderer.dart:716:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - base_avatar_renderer.dart:1171:32 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - base_avatar_renderer.dart:1238:32 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - base_avatar_renderer.dart:1249:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - base_avatar_renderer.dart:1251:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - base_avatar_renderer.dart:1253:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - base_avatar_renderer.dart:1287:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - base_avatar_renderer.dart:1289:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - base_avatar_renderer.dart:1291:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - canvas_extensions.dart:20:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:40:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:83:32 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:106:32 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:183:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:277:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:308:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - canvas_extensions.dart:339:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+44 issues found.

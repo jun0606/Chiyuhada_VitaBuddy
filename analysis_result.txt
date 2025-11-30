@@ -1,0 +1,111 @@
+Analyzing Chiyuhada_VitaBuddy...                                
+
+warning - Unused import: 'package:flame/components.dart' - lib\avatar\avatar_animator.dart:2:8 - unused_import
+warning - Unused import: 'package:flutter/material.dart' - lib\avatar\avatar_animator.dart:3:8 - unused_import
+warning - This default clause is covered by the previous cases - lib\avatar\avatar_body_proportions.dart:78:7 - unreachable_switch_default
+   info - Dangling library doc comment - lib\avatar\avatar_calculations.dart:1:1 - dangling_library_doc_comments
+warning - Unused import: 'body_measurements.dart' - lib\avatar\avatar_calculations.dart:3:8 - unused_import
+warning - The value of the local variable 'rootJoint' isn't used - lib\avatar\avatar_calculations.dart:207:11 - unused_local_variable
+warning - Unused import: 'dart:math' - lib\avatar\body_measurements.dart:1:8 - unused_import
+warning - This default clause is covered by the previous cases - lib\avatar\body_poses.dart:258:7 - unreachable_switch_default
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\avatar\clothing_colors.dart:80:28 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\avatar\clothing_colors.dart:81:34 - deprecated_member_use
+warning - This default clause is covered by the previous cases - lib\avatar\face_expressions.dart:160:7 - unreachable_switch_default
+warning - Unused import: 'screens/polygon_test_screen.dart' - lib\main.dart:6:8 - unused_import
+warning - Unused import: '../avatar/avatar_calculations.dart' - lib\providers\app_provider.dart:14:8 - unused_import
+warning - Unused import: '../avatar/avatar_body_proportions.dart' - lib\providers\app_provider.dart:16:8 - unused_import
+warning - Unused import: 'dart:developer' - lib\providers\app_provider.dart:18:8 - unused_import
+   info - The private field _autoRotationEnabled could be 'final' - lib\providers\app_provider.dart:38:8 - prefer_final_fields
+   info - Don't invoke 'print' in production code - lib\providers\app_provider.dart:90:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\app_provider.dart:91:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\app_provider.dart:103:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\app_provider.dart:132:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\app_provider.dart:219:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\clothing_settings_screen.dart:47:45 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\clothing_settings_screen.dart:140:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\clothing_settings_screen.dart:140:43 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\clothing_settings_screen.dart:141:26 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion - lib\screens\clothing_settings_screen.dart:141:49 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\enhanced_profile_setup_screen.dart:313:13 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\enhanced_profile_setup_screen.dart:414:14 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\screens\enhanced_profile_setup_screen.dart:508:14 - unnecessary_to_list_in_spreads
+   info - Don't use 'BuildContext's across async gaps - lib\screens\food_input_screen.dart:64:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\food_input_screen.dart:114:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\food_input_screen.dart:134:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\food_input_screen.dart:161:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\food_input_screen.dart:165:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\food_input_screen.dart:175:9 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\food_input_screen.dart:281:61 - deprecated_member_use
+warning - Unused import: 'package:provider/provider.dart' - lib\screens\history_detail_screen.dart:2:8 - unused_import
+warning - Unused import: '../providers/app_provider.dart' - lib\screens\history_detail_screen.dart:3:8 - unused_import
+   info - Unnecessary use of string interpolation - lib\screens\history_detail_screen.dart:133:28 - unnecessary_string_interpolations
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\history_detail_screen.dart:198:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\history_detail_screen.dart:209:28 - deprecated_member_use
+   info - An uninitialized field should have an explicit type annotation - lib\screens\history_screen.dart:78:1 - prefer_typing_uninitialized_variables
+  error - Expected to find ';' - lib\screens\history_screen.dart:78:1 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\screens\history_screen.dart:78:1 - missing_const_final_var_or_type
+  error - Expected a class member - lib\screens\history_screen.dart:78:8 - expected_class_member
+  error - Expected a class member - lib\screens\history_screen.dart:78:36 - expected_class_member
+  error - The method 'HistoryDetailScreen' isn't defined for the type '_HistoryScreenState' - lib\screens\history_screen.dart:93:29 - undefined_method
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\history_screen.dart:108:35 - deprecated_member_use
+warning - Unused import: '../widgets/calorie_indicator.dart' - lib\screens\home_screen.dart:5:8 - unused_import
+warning - Unused import: '../avatar/avatar_animations.dart' - lib\screens\home_screen.dart:8:8 - unused_import
+  error - The method 'HistoryScreen' isn't defined for the type '_HomeScreenState' - lib\screens\home_screen.dart:85:45 - undefined_method
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:168:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:174:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:251:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:253:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:256:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:268:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:314:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:316:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:319:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:410:29 - deprecated_member_use
+warning - The declaration '_buildClothingButton' isn't referenced - lib\screens\home_screen.dart:431:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:434:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:438:44 - deprecated_member_use
+warning - The declaration '_buildCalorieInfo' isn't referenced - lib\screens\home_screen.dart:459:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:554:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:591:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:593:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:697:33 - deprecated_member_use
+warning - Unused import: '../avatar/avatar_animator.dart' - lib\screens\polygon_test_screen.dart:4:8 - unused_import
+warning - Unused import: '../widgets/advanced_avatar_widget.dart' - lib\screens\profile_setup_screen.dart:5:8 - unused_import
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_setup_screen.dart:256:23 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_setup_screen.dart:257:23 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\settings_screen.dart:84:33 - deprecated_member_use
+warning - Unused import: 'profile_setup_screen.dart' - lib\screens\splash_screen.dart:4:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\splash_screen.dart:100:41 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\weight_record_screen.dart:39:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\weight_record_screen.dart:76:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\weight_record_screen.dart:87:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\weight_record_screen.dart:99:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\weight_record_screen.dart:105:9 - use_build_context_synchronously
+   info - The 'child' argument should be last in widget constructor invocations - lib\screens\weight_record_screen.dart:144:9 - sort_child_properties_last
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\weight_record_screen.dart:268:47 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\data_migration_service.dart:70:9 - avoid_print
+   info - The imported package 'path' isn't a dependency of the importing package - lib\services\database_service.dart:2:8 - depend_on_referenced_packages
+   info - The imported package 'timezone' isn't a dependency of the importing package - lib\services\notification_service.dart:2:8 - depend_on_referenced_packages
+   info - The imported package 'timezone' isn't a dependency of the importing package - lib\services\notification_service.dart:3:8 - depend_on_referenced_packages
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:62:5 - avoid_print
+warning - Unused import: 'dart:math' - lib\widgets\avatar_parts.dart:1:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:25:32 - deprecated_member_use
+warning - The declaration '_drawSingleEye' isn't referenced - lib\widgets\avatar_parts.dart:470:8 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:613:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:812:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:813:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:837:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:847:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:856:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:912:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\avatar_parts.dart:919:29 - deprecated_member_use
+warning - Unused import: 'package:flame/components.dart' - lib\widgets\clothing_parts.dart:1:8 - unused_import
+warning - Unused import: '../avatar/body_measurements.dart' - lib\widgets\clothing_parts.dart:3:8 - unused_import
+   info - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\widgets\vertical_polygon_gauge.dart:2:8 - unnecessary_import
+warning - The value of the local variable 'glowColor' isn't used - lib\widgets\vertical_polygon_gauge.dart:129:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\vertical_polygon_gauge.dart:148:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\vertical_polygon_gauge.dart:154:27 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\vertical_polygon_gauge.dart:179:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\vertical_polygon_gauge.dart:180:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\vertical_polygon_gauge.dart:193:44 - deprecated_member_use
+

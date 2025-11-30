@@ -1,0 +1,17 @@
+Analyzing app_provider.dart...                                  
+
+warning - Unused import: '../utils/calorie_calculator.dart' - lib\providers\app_provider.dart:10:8 - unused_import
+warning - Unused import: '../models/calorie_status.dart' - lib\providers\app_provider.dart:13:8 - unused_import
+warning - Unused import: '../avatar/avatar_calculations.dart' - lib\providers\app_provider.dart:19:8 - unused_import
+warning - Unused import: '../avatar/avatar_body_proportions.dart' - lib\providers\app_provider.dart:21:8 - unused_import
+   info - The private field _calorieMode could be 'final' - lib\providers\app_provider.dart:36:10 - prefer_final_fields
+warning - The value of the field '_lastOverLimitNotificationTime' isn't used - lib\providers\app_provider.dart:46:13 - unused_field
+warning - The value of the field '_keyLastUpdate' isn't used - lib\providers\app_provider.dart:48:23 - unused_field
+warning - The value of the field '_keyCurrentCalories' isn't used - lib\providers\app_provider.dart:49:23 - unused_field
+   info - The private field _autoRotationEnabled could be 'final' - lib\providers\app_provider.dart:58:8 - prefer_final_fields
+  error - The argument type 'ClothingColors' can't be assigned to the parameter type 'Map<String, int>?'.  - lib\providers\app_provider.dart:226:67 - argument_type_not_assignable
+   info - Unnecessary braces in a string interpolation - lib\providers\app_provider.dart:276:108 - unnecessary_brace_in_string_interps
+  error - The method 'getHistorySummary' isn't defined for the type 'DatabaseService' - lib\providers\app_provider.dart:299:38 - undefined_method
+  error - The method 'getHistorySummaries' isn't defined for the type 'DatabaseService' - lib\providers\app_provider.dart:309:38 - undefined_method
+  error - The named parameter 'animationType' isn't defined - lib\providers\app_provider.dart:328:7 - undefined_named_parameter
+
