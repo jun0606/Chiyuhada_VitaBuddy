@@ -165,13 +165,13 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.white.withOpacity(0.9),
+              Colors.white.withAlpha(230),
               const Color(0xFFE8F5E9), // 연한 민트
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2E3B32).withOpacity(0.1),
+              color: const Color(0xFF2E3B32).withAlpha(26),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -248,12 +248,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6), // 반투명 흰색 배경
+        color: Colors.white.withAlpha(153), // 반투명 흰색 배경
         borderRadius: BorderRadius.circular(24), // 더 둥글게
-        border: Border.all(color: const Color(0xFFA5D6A7).withOpacity(0.5)), // 연한 초록 테두리
+        border: Border.all(color: const Color(0xFFA5D6A7).withAlpha(128)), // 연한 초록 테두리
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4CAF50).withOpacity(0.1), // 연한 초록 그림자
+            color: const Color(0xFF4CAF50).withAlpha(26), // 연한 초록 그림자
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -265,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: Colors.white.withOpacity(0.5),
+              backgroundColor: Colors.white.withAlpha(128),
               child: ClipOval(
                 child: Image.asset(
                   'assets/logo/logowind.jpeg',
@@ -311,12 +311,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       height: 420, // 게이지 공간 확보를 위해 높이 증가
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7), // 반투명 흰색
+        color: Colors.white.withAlpha(179), // 반투명 흰색
         borderRadius: BorderRadius.circular(30), // 둥근 모서리 (구름 느낌)
-        border: Border.all(color: const Color(0xFFA5D6A7).withOpacity(0.5)), // 연한 초록 테두리
+        border: Border.all(color: const Color(0xFFA5D6A7).withAlpha(128)), // 연한 초록 테두리
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4CAF50).withOpacity(0.1), // 연한 초록 그림자
+            color: const Color(0xFF4CAF50).withAlpha(26), // 연한 초록 그림자
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -389,11 +389,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildClothingButton() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9).withOpacity(0.9), // 연한 민트 배경
+        color: const Color(0xFFE8F5E9).withAlpha(230), // 연한 민트 배경
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2E3B32).withOpacity(0.1),
+            color: const Color(0xFF2E3B32).withAlpha(26),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -509,7 +509,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20), // 둥근 모서리
         boxShadow: [
           BoxShadow(
-            color: backgroundColor.withOpacity(0.4),
+            color: backgroundColor.withAlpha(102),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -546,9 +546,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTodaySummary(AppProvider appProvider) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withAlpha(153),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFA5D6A7).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFFA5D6A7).withAlpha(77)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -697,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
