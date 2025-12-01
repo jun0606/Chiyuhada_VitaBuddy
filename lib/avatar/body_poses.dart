@@ -184,12 +184,12 @@ class BodyPoseData {
     rightShoulderAngle: 0.3,
     leftElbowAngle: -0.2,
     rightElbowAngle: 0.2,
-    leftHipAngle: 0.0,
+    leftHipAngle:0.0,
     rightHipAngle: 0.0,
     leftKneeAngle: 0.0,
     rightKneeAngle: 0.0,
-    torsoAngle: 0.2,
-    neckAngle: -0.6, // 고개 크게 아래
+    torsoAngle: 0.0,      // 변경: 0.2 → 0.0 (몸은 똑바로)
+    neckAngle: -0.8,      // 변경: -0.6 → -0.8 (고개를 더 숙임)
   );
 
   /// 만세 (환호) - 크로스 방식

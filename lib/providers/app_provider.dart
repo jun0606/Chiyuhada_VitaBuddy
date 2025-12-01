@@ -9,7 +9,7 @@ import '../services/data_migration_service.dart';
 import '../services/calorie_state_calculator.dart';
 import '../services/background_calorie_service.dart';
 import '../services/health_data_service.dart';
-import '../models/calorie_status.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
@@ -178,26 +178,34 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       developer.log('❌ 초기화 실패: $e');
     } finally {
       // ✅ 웰컴 그리팅: notifyListeners 이전에 greeting 상태로 설정
+      developer.log('=== 웰컴 그리팅 설정 시작 ===');
       _currentExpression = FaceExpressionType.greeting;
       _currentPose = BodyPose.greeting;
+      developer.log('✅ 표정 설정: ${_currentExpression.toString()}');
+      developer.log('✅ 포즈 설정: ${_currentPose.toString()}');
       resetExpressionTimer(); // 자동 로테이션 일시 중지
       
       _isLoading = false;
       notifyListeners(); // 이제 greeting 상태로 UI 업데이트됨
       
-      developer.log('👋 웰컴 그리팅 시작 (초기화 완료)');
+      developer.log('👋 웰컴 그리팅 시작 (초기화 완료) - 3초 대기 중...');
       
       // 3초 후 정상 상태로 복귀
       Future.delayed(const Duration(seconds: 3), () {
-        developer.log('👋 웰컴 그리팅 종료 - 상태 복귀');
+        if (_isDisposed) return; // 안전장치
+        developer.log('⏰ 3초 경과 - 웰컴 그리팅 종료, 상태 복귀 시작');
         _updateAvatarByCalorieStatus();
         startAutoExpressionRotation();
+        developer.log('=== 웰컴 그리팅 종료 ===');
       });
     }
   }
 
+  bool _isDisposed = false;
+
   @override
   void dispose() {
+    _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
     _expressionTimer?.cancel();
     _midnightTimer?.cancel();
@@ -377,49 +385,55 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
   /// 🎭 칼로리 상태별 아바타 자동 업데이트
   void _updateAvatarByCalorieStatus() {
-    print('🎭 아바타 상태 업데이트 시작');
+    developer.log('🎭 아바타 상태 업데이트 시작');
     
     if (_goalCalories == 0) {
-      print('⚠️ 목표 칼로리가 0입니다. 임시 값(2000)으로 설정하여 진행합니다.');
+      developer.log('⚠️ 목표 칼로리가 0입니다. 임시 값(2000)으로 설정하여 진행합니다.');
       _goalCalories = 2000.0; // 안전장치
     }
     
     final percentage = _intakeCalories / _goalCalories;
-    print('📊 섭취 비율: ${(percentage * 100).toStringAsFixed(1)}% ($_intakeCalories / $_goalCalories)');
+    developer.log('📊 섭취 비율: ${(percentage * 100).toStringAsFixed(1)}% ($_intakeCalories / $_goalCalories)');
     
+    FaceExpressionType newExpression;
+    BodyPose newPose;
+
     // 🟢 이상적 범위 (80-100%)
     if (percentage >= 0.8 && percentage <= 1.0) {
-      print('🟢 이상적 범위 감지');
-      setExpression(FaceExpressionType.happy);
-      setPose(BodyPose.neutral);
-      print('😊 이상적 칼로리 - 행복한 아바타');
+      developer.log('🟢 이상적 범위 감지');
+      newExpression = FaceExpressionType.satisfied;
+      newPose = BodyPose.cheer;
+      developer.log('😊 만족 - 칼로리 달성! 환호하는 아바타');
     }
-    // 🟡 경고 범위 (100-120%)
-    else if (percentage > 1.0 && percentage <= 1.2) {
-      print('🟡 경고 범위 감지');
-      setExpression(FaceExpressionType.warning);
-      setPose(BodyPose.touchBelly);
-      print('😅 경고 범위 - 조심스러운 아바타');
-    }
-    // 🔴 과식 범위 (120% 초과)
+    // 🔴 과식 (120% 초과)
     else if (percentage > 1.2) {
-      print('🔴 과식 범위 감지');
-      setExpression(FaceExpressionType.stuffed);
-      setPose(BodyPose.bendForward);
-      print('😰 과식 - 힘들어하는 아바타');
+      developer.log('🔴 과식 범위 감지');
+      newExpression = FaceExpressionType.stuffed;
+      newPose = BodyPose.bendForward;
+      developer.log('😰 과식 - 힘들어하는 아바타');
     }
     // 😔 낮은 칼로리 (50% 미만)
     else if (percentage < 0.5) {
-      print('💙 저칼로리 범위 감지');
-      setExpression(FaceExpressionType.hungry);
-      setPose(BodyPose.headDown);
-      print('😔 에너지 부족 - 배고픈 아바타');
-    }    // 🙂 보통 범위 (50-80%)
+      developer.log('💙 저칼로리 범위 감지');
+      newExpression = FaceExpressionType.hungry;
+      newPose = BodyPose.touchBelly;
+      developer.log('😔 에너지 부족 - 배고픈 아바타');
+    }
+    // 🙂 보통 범위 (50-80%)
     else {
-      print('⚪ 보통 범위 감지');
-      setExpression(FaceExpressionType.neutral);
-      setPose(BodyPose.neutral);
-      print('🙂 보통 상태 - 중립 아바타');
+      developer.log('⚪ 보통 범위 감지');
+      newExpression = FaceExpressionType.neutral;
+      newPose = BodyPose.neutral;
+      developer.log('🙂 보통 상태 - 중립 아바타');
+    }
+
+    // 상태 변경이 있을 때만 업데이트
+    if (_currentExpression != newExpression || _currentPose != newPose) {
+      _currentExpression = newExpression;
+      _currentPose = newPose;
+      
+      // 수동 변경이 아니므로 타이머 리셋은 하지 않음 (자동 로테이션 흐름 유지)
+      notifyListeners();
     }
   }
   
@@ -539,6 +553,33 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     _expressionTimer?.cancel();
   }
 
+  /// 웰컴 그리팅 트리거 (홈 화면 진입 시 호출)
+  void triggerWelcomeGreeting() {
+    developer.log('=== 홈 화면 진입 - 웰컴 그리팅 시작 ===');
+    
+    // 현재 표정/포즈를 greeting으로 변경
+    _currentExpression = FaceExpressionType.greeting;
+    _currentPose = BodyPose.greeting;
+    developer.log('✅ 표정 설정: ${_currentExpression.toString()}');
+    developer.log('✅ 포즈 설정: ${_currentPose.toString()}');
+    
+    // 자동 로테이션 일시 중지
+    resetExpressionTimer();
+    
+    notifyListeners();
+    
+    developer.log('👋 웰컴 그리팅 표시 중 - 3초 대기...');
+    
+    // 3초 후 정상 상태로 복귀
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_isDisposed) return;
+      developer.log('⏰ 3초 경과 - 웰컴 그리팅 종료, 상태 복귀');
+      _updateAvatarByCalorieStatus();
+      startAutoExpressionRotation();
+      developer.log('=== 웰컴 그리팅 종료 ===');
+    });
+  }
+
   void _scheduleNextExpression() {
     if (!_autoRotationEnabled) return;
     
@@ -638,15 +679,15 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     // 칼로리 상태에 따라 적절한 표정과 포즈 설정
     final calorieStatus = CalorieStateCalculator.getState(_intakeCalories, _goalCalories);
     
-    if (calorieStatus == CalorieStatus.ideal) {
+    if (calorieStatus == CalorieState.optimal || calorieStatus == CalorieState.achieved) {
       // 이상적인 칼로리 섭취 - 기쁜 표정
       setExpression(FaceExpressionType.happy, autoReturn: true);
       setPose(BodyPose.armsUp, autoReturn: true);
-    } else if (calorieStatus == CalorieStatus.veryLow) {
+    } else if (calorieStatus == CalorieState.veryLow || calorieStatus == CalorieState.low) {
       // 너무 적게 섭취 - 배고픈 표정
       setExpression(FaceExpressionType.hungry, autoReturn: true);
       setPose(BodyPose.touchBelly, autoReturn: true);
-    } else if (calorieStatus == CalorieStatus.exceeded) {
+    } else if (calorieStatus == CalorieState.exceeded || calorieStatus == CalorieState.excessive) {
       // 과다 섭취 - 거부 표정
       setExpression(FaceExpressionType.refuse, autoReturn: true);
       setPose(BodyPose.refuse, autoReturn: true);
