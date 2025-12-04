@@ -1,3 +1,4 @@
+import 'dart:async'; // Timer 사용을 위해 추가
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode 사용
 import 'package:provider/provider.dart';
@@ -13,6 +14,7 @@ import 'settings_screen.dart'; // 설정 화면
 import 'history_screen.dart'; // 기록 화면
 import 'polygon_test_screen.dart'; // 개발자 테스트 화면
 import '../widgets/enhanced_calorie_gauge.dart'; // 고도화된 게이지 위젯 import
+import '../utils/meal_pattern_calorie_guide.dart'; // 식사 패턴 기반 칼로리 안내
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,17 +24,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
 
-    // UI가 완전히 렌더링된 후 자동 표정 로테이션 시작
+    // UI가 완전히 렌더링된 후 웰컴 그리팅 및 자동 표정 로테이션 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final appProvider = Provider.of<AppProvider>(context, listen: false);
-        appProvider.startAutoExpressionRotation();
+        // 홈 화면 진입 시 웰컴 그리팅 표시
+        appProvider.triggerWelcomeGreeting();
       }
     });
+    
+    // 1분마다 화면 갱신 (식사 안내 메시지 시간 업데이트)
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -134,6 +152,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildAvatarSection(appProvider),
 
                     const SizedBox(height: 16),
+                    
+                    // 식사 패턴 기반 칼로리 안내
+                    _buildMealGuidanceCard(appProvider),
 
                     // 애니메이션 타입 선택 (제거됨)
                     // _buildAnimationControls(appProvider),
@@ -204,13 +225,20 @@ class _HomeScreenState extends State<HomeScreen> {
               switch (index) {
                 case 0:
                   // 식사 기록 화면
+                  print('🔍 [DEBUG] 식사 기록 화면 열기');
                   final result = await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const FoodInputScreen()),
                   );
 
+                  print('🔍 [DEBUG] 식사 기록 화면 닫힘, result: $result');
+                  
                   // 음식이 추가되었다면 세레모니 실행
                   if (result == true && context.mounted) {
+                    print('✅ [DEBUG] 세레모니 트리거 조건 충족, triggerCeremony() 호출');
                     Provider.of<AppProvider>(context, listen: false).triggerCeremony();
+                    print('✅ [DEBUG] triggerCeremony() 호출 완료');
+                  } else {
+                    print('❌ [DEBUG] 세레모니 미실행 - result: $result, mounted: ${context.mounted}');
                   }
                   break;
                 case 1:
@@ -356,12 +384,13 @@ class _HomeScreenState extends State<HomeScreen> {
             right: 24,
             bottom: 24,
             child: AnimatedCalorieGauge(
-              current: appProvider.currentCalories,
+              current: appProvider.totalCalories,
               goal: appProvider.dailyCalorieGoal,
               burned: appProvider.currentBurnedCalories, // 운동 소모
               tdeeBurned: appProvider.tdeeBurnedCalories, // TDEE 소모
               height: 36,
               showLabel: true,
+              mealPattern: appProvider.userProfile?.getMealPattern(), // 식사 패턴 전달
             ),
           ),
           
@@ -379,6 +408,42 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
+          
+          // 4. 수면 모드 표시 (왼쪽 상단)
+          if (appProvider.isSleepMode)
+            Positioned(
+              top: 16,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3F51B5).withAlpha(204), // Indigo 80%
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(26),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bedtime_rounded, color: Colors.white, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      '수면 모드',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -438,6 +503,126 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 식사 패턴 기반 칼로리 안내 카드
+  Widget _buildMealGuidanceCard(AppProvider appProvider) {
+    final guidance = MealPatternCalorieGuide.getGuidance(
+      mealPattern: appProvider.userProfile?.getMealPattern(),
+      dailyGoal: appProvider.dailyCalorieGoal,
+      currentIntake: appProvider.totalCalories,
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            guidance.isLow
+                ? const Color(0xFFFFF3E0) // 부족: 따뜻한 오렌지
+                : guidance.isHigh
+                    ? const Color(0xFFFFEBEE) // 초과: 부드러운 빨강
+                    : const Color(0xFFE8F5E9), // 적정: 연한 민트
+            Colors.white.withAlpha(230),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: guidance.isLow
+              ? const Color(0xFFFFB74D).withAlpha(128)
+              : guidance.isHigh
+                  ? const Color(0xFFEF5350).withAlpha(128)
+                  : const Color(0xFFA5D6A7).withAlpha(128),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2E3B32).withAlpha(20),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 제목
+            Row(
+              children: [
+                Icon(
+                  Icons.restaurant_menu,
+                  color: guidance.isLow
+                      ? const Color(0xFFF57C00)
+                      : guidance.isHigh
+                          ? const Color(0xFFD32F2F)
+                          : const Color(0xFF4CAF50),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '🍽️ 식사 안내',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF37474F),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // 메시지
+            Text(
+              guidance.message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF546E7A),
+                height: 1.5,
+              ),
+            ),
+
+            // 다음 식사 정보
+            if (guidance.nextMealName != null && guidance.caloriesUntilNextMeal != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(179),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFB0BEC5).withAlpha(100),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule,
+                      color: Color(0xFF546E7A),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '💡 ${guidance.nextMealName ?? "다음 식사"}(${guidance.nextMealTime ?? "--:--"})까지 '
+                        '${guidance.caloriesUntilNextMeal != null ? (guidance.caloriesUntilNextMeal! / 50).round() * 50 : 0}kcal '
+                        '${(guidance.caloriesUntilNextMeal ?? 0) > 0 ? "더 필요" : "줄이세요"}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF37474F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
  Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,10 +642,22 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _buildActionButton(
                 '식사 기록',
                 Icons.soup_kitchen_rounded, // 음식 아이콘
-                () {
-                  Navigator.of(context).push(
+                () async {
+                  print('🔍 [DEBUG] 식사 기록 ActionButton 클릭');
+                  final result = await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const FoodInputScreen()),
                   );
+                  
+                  print('🔍 [DEBUG] 식사 기록 ActionButton 닫힘, result: $result');
+                  
+                  // 음식이 추가되었다면 세레모니 실행
+                  if (result == true && context.mounted) {
+                    print('✅ [DEBUG] ActionButton 세레모니 트리거, triggerCeremony() 호출');
+                    Provider.of<AppProvider>(context, listen: false).triggerCeremony();
+                    print('✅ [DEBUG] ActionButton triggerCeremony() 호출 완료');
+                  } else {
+                    print('❌ [DEBUG] ActionButton 세레모니 미실행 - result: $result, mounted: ${context.mounted}');
+                  }
                 },
                 const Color(0xFFA5D6A7), // 연한 초록 배경
               ),

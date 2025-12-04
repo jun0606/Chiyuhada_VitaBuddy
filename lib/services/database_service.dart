@@ -22,7 +22,7 @@ class DatabaseService {
     String path = join(documentsDirectory.path, 'chiyuhada_vita_buddy.db');
     return await openDatabase(
       path,
-      version: 3,  // 운동 기록 기능 추가 및 마이그레이션 안정화
+      version: 4,  // 즐겨찾기 및 최근 음식 기능 추가
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -97,6 +97,16 @@ class DatabaseService {
       )
     ''');
 
+    // 즐겨찾기 테이블 생성
+    await db.execute('''
+      CREATE TABLE favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        food_id INTEGER NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (food_id) REFERENCES foods (id)
+      )
+    ''');
+
     // 기본 음식 데이터 삽입
     await _insertDefaultFoods(db);
   }
@@ -150,6 +160,18 @@ class DatabaseService {
           last_sync_timestamp TEXT NOT NULL,
           records_synced INTEGER DEFAULT 0,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+    }
+    
+    // 버전 3 → 4: 즐겨찾기 기능 추가
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS favorites (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          food_id INTEGER NOT NULL,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (food_id) REFERENCES foods (id)
         )
       ''');
     }
@@ -304,6 +326,90 @@ class DatabaseService {
   Future<void> deleteFoodIntake(int id) async {
     Database db = await database;
     await db.delete('food_intakes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// 최근 먹은 음식 (고유 음식 목록, 중복 제거)
+  /// 저장된 모든 음식의 고유 카테고리 목록을 조회합니다.
+  Future<List<String>> getUniqueCategories() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT DISTINCT category FROM foods WHERE category IS NOT NULL ORDER BY category');
+    return result.map((row) => row['category'] as String).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getRecentFoods({int days = 7}) async {
+    Database db = await database;
+    DateTime startDate = DateTime.now().subtract(Duration(days: days));
+    String startDateStr = startDate.toIso8601String().split('T')[0];
+    
+    // 최근 N일 내에 먹은 고유한 음식들, 가장 최근 섭취 시간 기준 정렬
+    return await db.rawQuery('''
+      SELECT DISTINCT
+        f.id,
+        f.name,
+        f.calories_per_100g,
+        f.category,
+        MAX(fi.created_at) as last_eaten,
+        COUNT(fi.id) as eat_count
+      FROM foods f
+      INNER JOIN food_intakes fi ON f.id = fi.food_id
+      WHERE fi.date >= ?
+      GROUP BY f.id
+      ORDER BY last_eaten DESC
+      LIMIT 20
+    ''', [startDateStr]);
+  }
+
+  /// 즐겨찾기 추가
+  Future<int> addFavorite(int foodId) async {
+    Database db = await database;
+    
+    // 이미 즐겨찾기인지 확인
+    List<Map<String, dynamic>> existing = await db.query(
+      'favorites',
+      where: 'food_id = ?',
+      whereArgs: [foodId],
+    );
+    
+    if (existing.isNotEmpty) {
+      return existing.first['id'] as int; // 이미 존재하면 기존 ID 반환
+    }
+    
+    return await db.insert('favorites', {
+      'food_id': foodId,
+    });
+  }
+
+  /// 즐겨찾기 제거
+  Future<void> removeFavorite(int foodId) async {
+    Database db = await database;
+    await db.delete('favorites', where: 'food_id = ?', whereArgs: [foodId]);
+  }
+
+  /// 즐겨찾기 목록 조회
+  Future<List<Map<String, dynamic>>> getFavorites() async {
+    Database db = await database;
+    return await db.rawQuery('''
+      SELECT 
+        f.id,
+        f.name,
+        f.calories_per_100g,
+        f.category,
+        fav.created_at as favorited_at
+      FROM favorites fav
+      INNER JOIN foods f ON fav.food_id = f.id
+      ORDER BY fav.created_at DESC
+    ''');
+  }
+
+  /// 특정 음식이 즐겨찾기인지 확인
+  Future<bool> isFavorite(int foodId) async {
+    Database db = await database;
+    List<Map<String, dynamic>> results = await db.query(
+      'favorites',
+      where: 'food_id = ?',
+      whereArgs: [foodId],
+    );
+    return results.isNotEmpty;
   }
 
   // 운동 기록 관련 메서드들

@@ -3,6 +3,7 @@ import 'clothing_settings_screen.dart';
 import 'profile_edit_screen.dart';
 import 'notification_settings_screen.dart';
 import 'calorie_goal_settings_screen.dart';
+import 'sleep_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -39,6 +40,20 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => const CalorieGoalSettingsScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildSettingsItem(
+            context,
+            '수면 설정',
+            Icons.bedtime_rounded,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SleepSettingsScreen(),
                 ),
               );
             },

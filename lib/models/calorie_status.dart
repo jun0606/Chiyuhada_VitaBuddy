@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/meal_pattern_calorie_guide.dart';
 
 /// 칼로리 상태 (7단계)
 /// 
@@ -107,9 +108,54 @@ extension CalorieStatusExtension on CalorieStatus {
 }
 
 /// 칼로리 상태 계산
-CalorieStatus getCalorieStatus(double current, double goal) {
+CalorieStatus getCalorieStatus({
+  required double current,
+  required double goal,
+  Map<String, dynamic>? mealPattern,
+  DateTime? currentTime,
+}) {
   if (goal <= 0) return CalorieStatus.ideal;
   
+  // 식사 패턴이 있으면 권장 칼로리 기준으로 판단
+  if (mealPattern != null) {
+    try {
+      final guidance = MealPatternCalorieGuide.getGuidance(
+        mealPattern: mealPattern,
+        dailyGoal: goal,
+        currentIntake: current,
+        currentTime: currentTime,
+      );
+      
+      // 권장 칼로리 대비 현재 섭취량 비율 계산
+      double recommendedPercentage;
+      if (guidance.recommendedCalories > 0) {
+        recommendedPercentage = (current / guidance.recommendedCalories) * 100;
+      } else {
+        // 권장량이 0일 때 (아직 첫 식사 전)
+        if (current > 0) {
+          // 섭취량이 있으면 무한대 초과 -> 매우 큰 값으로 설정 (Exceeded 유도)
+          recommendedPercentage = 999.0; 
+        } else {
+          // 둘 다 0이면 적절함
+          recommendedPercentage = 100.0; // Ideal 범위
+        }
+      }
+      
+      // 권장 칼로리 기준으로 상태 판단
+      if (recommendedPercentage <= 50) return CalorieStatus.veryLow;
+      if (recommendedPercentage <= 75) return CalorieStatus.low;
+      if (recommendedPercentage <= 90) return CalorieStatus.belowIdeal;
+      if (recommendedPercentage <= 110) return CalorieStatus.ideal;
+      if (recommendedPercentage <= 125) return CalorieStatus.slightlyHigh;
+      if (recommendedPercentage <= 140) return CalorieStatus.high;
+      return CalorieStatus.exceeded;
+    } catch (e) {
+      print('❌ [CalorieStatus] Error: $e');
+      // MealPatternCalorieGuide 오류 시 기본 로직으로 fallback
+    }
+  }
+  
+  // 기존 로직 (일일 목표 기준)
   final percentage = (current / goal) * 100;
   
   if (percentage <= 20) return CalorieStatus.veryLow;

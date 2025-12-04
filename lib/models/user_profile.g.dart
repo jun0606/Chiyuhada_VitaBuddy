@@ -30,13 +30,15 @@ class UserProfileAdapter extends TypeAdapter<UserProfile> {
       bodyShape: fields[10] as String?,
       personalityTraits: (fields[11] as Map?)?.cast<String, int>(),
       bodyCompositionData: (fields[12] as Map?)?.cast<String, dynamic>(),
+      mealPattern: (fields[13] as Map?)?.cast<String, dynamic>(),
+      alertSensitivity: fields[14] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserProfile obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -62,7 +64,11 @@ class UserProfileAdapter extends TypeAdapter<UserProfile> {
       ..writeByte(11)
       ..write(obj.personalityTraits)
       ..writeByte(12)
-      ..write(obj.bodyCompositionData);
+      ..write(obj.bodyCompositionData)
+      ..writeByte(13)
+      ..write(obj.mealPattern)
+      ..writeByte(14)
+      ..write(obj.alertSensitivity);
   }
 
   @override

@@ -4,6 +4,9 @@ import '../utils/calorie_calculator.dart';
 import '../models/calorie_status.dart';
 import 'notification_service.dart';
 import 'dart:developer' as developer;
+import 'dart:convert';
+import '../models/user_profile.dart';
+import 'enhanced_metabolism_calculator.dart';
 
 /// 백그라운드 칼로리 모니터링 서비스
 /// 
@@ -140,67 +143,156 @@ Future<void> _checkCalorieStatus() async {
   try {
     final prefs = await SharedPreferences.getInstance();
     
-    // 저장된 칼로리 및 목표 읽기
-    final savedCalories = prefs.getDouble('calorie_current_value');
+    // 1. 저장된 데이터 읽기
+    final intakeCalories = prefs.getDouble('calorie_current_value'); // 섭취량
     final dailyGoal = prefs.getDouble('daily_calorie_goal') ?? 2000.0;
     final lastUpdate = prefs.getInt('calorie_last_update_ms');
     
-    if (savedCalories == null || lastUpdate == null) {
+    // 운동 데이터
+    final exerciseBurned = prefs.getDouble('exercise_burned_calories') ?? 0.0;
+    final exerciseMinutes = prefs.getInt('exercise_total_minutes') ?? 0;
+    
+    if (intakeCalories == null || lastUpdate == null) {
       developer.log('⚠️ 칼로리 데이터 없음, 건너뜀');
       return;
     }
     
-    // 경과 시간 계산
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final minutesPassed = ((now - lastUpdate) / 60000).floor();
+    // 2. 프로필 데이터 읽기 및 재구성
+    final weight = prefs.getDouble('user_weight') ?? 60.0;
+    final height = prefs.getDouble('user_height') ?? 170.0;
+    final age = prefs.getInt('user_age') ?? 25;
+    final gender = prefs.getString('user_gender') ?? 'female';
+    final activityLevel = prefs.getString('user_activity_level') ?? 'moderate';
     
-    if (minutesPassed <= 0) return;
+    // 수면 설정 읽기
+    final sleepMode = prefs.getString('sleep_config_mode') ?? 'hybrid';
+    final sleepTime = prefs.getString('sleep_config_sleep_time') ?? '23:00';
+    final wakeTime = prefs.getString('sleep_config_wake_time') ?? '07:00';
     
-    // BMR/TDEE 계산을 위한 프로필 데이터 읽기
-    final weight = prefs.getDouble('user_weight');
-    final height = prefs.getDouble('user_height');
-    final age = prefs.getInt('user_age');
-    final gender = prefs.getString('user_gender');
-    final activityLevel = prefs.getString('user_activity_level');
-    
-    // BMR/TDEE 계산
-    final bmr = CalorieCalculator.calculateBMR(
-      weight: weight,
-      height: height,
+    // 임시 UserProfile 생성 (계산용)
+    final profile = UserProfile(
+      name: 'User', // 불필요
       age: age,
+      height: height,
+      initialWeight: weight,
       gender: gender,
+      activityLevel: activityLevel,
+      sleepConfig: SleepConfig(
+        mode: sleepMode,
+        manualSleepTime: sleepTime,
+        manualWakeTime: wakeTime,
+      ),
     );
     
-    final tdee = CalorieCalculator.calculateTDEE(bmr, activityLevel);
+    // 3. 실시간 소모량 계산 (Phase 16)
+    final now = DateTime.now();
     
-    // 감소량 계산
-    final decrease = CalorieCalculator.calculateCalorieDecrease(
-      tdee: tdee,
-      minutes: minutesPassed,
-      dailyGoal: dailyGoal,
+    // 누적 TDEE (BMR + 활동)
+    double accumulatedTDEE = EnhancedMetabolismCalculator.calculateAccumulatedTDEE(
+      profile, 
+      now
     );
     
-    // 현재 예상 칼로리
-    final estimatedCalories = CalorieCalculator.applyDecrease(
-      savedCalories,
-      decrease,
+    // 운동 시간 중복 제거 (AppProvider와 동일 로직)
+    if (exerciseMinutes > 0) {
+      final double dailyTDEE = EnhancedMetabolismCalculator.calculateEnhancedTDEE(profile);
+      final double avgBurnPerMinute = dailyTDEE / 1440.0; 
+      accumulatedTDEE -= (avgBurnPerMinute * exerciseMinutes);
+    }
+    
+    // 음수 방지
+    accumulatedTDEE = accumulatedTDEE < 0 ? 0 : accumulatedTDEE;
+    
+    // 4. 순 칼로리 계산
+    // Net = 섭취 - (누적TDEE + 운동소모)
+    final totalBurned = accumulatedTDEE + exerciseBurned;
+    final netCalories = intakeCalories - totalBurned;
+    
+    // 예상 칼로리 (알림 기준은 섭취량? 아니면 순 칼로리?)
+    // 기존 로직은 'estimatedCalories'를 사용하여 알림을 보냈음.
+    // 사용자는 "순 칼로리"를 기준으로 상태를 관리하고 싶어함.
+    final currentStatusValue = netCalories;
+    
+    // === 스마트 알림 시스템 (Phase 13) ===
+    
+    // 1. 사용자 설정 로드
+    final alertSensitivity = prefs.getString('alert_sensitivity') ?? 'normal';
+    
+    // 2. 식사 패턴 로드 및 파싱
+    final mealPatternJson = prefs.getString('meal_pattern');
+    Map<String, dynamic>? mealPattern;
+    int mealsPerDay = 3; // 기본값
+    
+    if (mealPatternJson != null && mealPatternJson.isNotEmpty) {
+      try {
+        mealPattern = jsonDecode(mealPatternJson) as Map<String, dynamic>;
+        
+        // 활성화된 식사 개수 계산
+        final meals = mealPattern['meals'] as List?;
+        if (meals != null) {
+          mealsPerDay = meals.where((meal) => meal['enabled'] == true).length;
+        }
+      } catch (e) {
+        developer.log('❌ 식사 패턴 파싱 실패: $e');
+        mealPattern = null;
+      }
+    }
+    
+    // 3. 동적 임계값 계산
+    final dynamicLowThreshold = CalorieCalculator.getDynamicLowThreshold(
+      mealsPerDay: mealsPerDay,
+      sensitivity: alertSensitivity,
     );
     
-    // 상태 확인
-    final status = getCalorieStatus(estimatedCalories, dailyGoal);
+    // 4. 다음 식사까지 시간 계산
+    final minutesUntilNextMeal = CalorieCalculator.getMinutesUntilNextMeal(
+      mealPattern,
+      now,
+    );
     
-    developer.log('📊 예상 칼로리: ${estimatedCalories.toInt()} / ${dailyGoal.toInt()}');
-    developer.log('📊 상태: $status');
+    // 5. 칼로리 퍼센트 계산 (목표 대비 순 칼로리)
+    // 순 칼로리가 목표의 몇 %인지?
+    // 보통 목표는 '섭취 목표'임.
+    // 하지만 TDEE만큼 소모되므로, 순 칼로리는 0에 가까워야 유지?
+    // 아니, '섭취 목표'는 TDEE와 같음.
+    // 시간이 지날수록 TDEE가 소모되므로, '남은 목표'가 줄어듦.
+    // 여기서 'percentage'는 '현재 보유 에너지 / 하루 필요 에너지' 개념이어야 함.
     
-    // veryLow 또는 low 상태일 때만 알림 발송
-    if (status == CalorieStatus.veryLow || status == CalorieStatus.low) {
+    // 기존 로직: estimatedCalories / dailyGoal
+    // estimatedCalories는 '남은 에너지' 개념.
+    final percentage = (currentStatusValue / dailyGoal) * 100;
+    
+    developer.log('📊 백그라운드 체크: 순 칼로리 ${currentStatusValue.toInt()} / 목표 ${dailyGoal.toInt()} (${percentage.toInt()}%)');
+    
+    // 6. 스마트 알림 판단
+    bool shouldAlert = false;
+    CalorieStatus? alertStatus;
+    
+    // veryLow (20% 이하) - 에너지가 거의 바닥남
+    if (percentage <= 20) {
+      shouldAlert = true;
+      alertStatus = CalorieStatus.veryLow;
+    }
+    // low (동적 임계값)
+    else if (percentage <= dynamicLowThreshold) {
+      if (CalorieCalculator.shouldSendAlert(
+        minutesUntilNextMeal: minutesUntilNextMeal,
+        sensitivity: alertSensitivity,
+      )) {
+        shouldAlert = true;
+        alertStatus = CalorieStatus.low;
+      }
+    }
+    
+    // 7. 알림 발송 (Hysteresis 적용)
+    if (shouldAlert && alertStatus != null) {
       final lastNotificationTime = prefs.getInt('last_low_calorie_notification') ?? 0;
-      final hoursSinceLastNotification = ((now - lastNotificationTime) / 3600000).floor();
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final hoursSinceLastNotification = ((nowMs - lastNotificationTime) / 3600000).floor();
       
-      // 최소 1시간 간격으로 알림 (Hysteresis)
       if (hoursSinceLastNotification >= 1) {
-        await _sendLowCalorieNotification(status, estimatedCalories, dailyGoal);
-        await prefs.setInt('last_low_calorie_notification', now);
+        await _sendLowCalorieNotification(alertStatus, currentStatusValue, dailyGoal);
+        await prefs.setInt('last_low_calorie_notification', nowMs);
       }
     }
     

@@ -105,4 +105,117 @@ class CalorieCalculator {
   static double applyDecrease(double current, double decrease) {
     return max(0, current - decrease);
   }
+
+  /// 식사 패턴 기반 동적 임계값 계산 (Option 1)
+  ///
+  /// 하루 식사 횟수에 따라 "low" 상태 임계값을 동적으로 조정
+  ///
+  /// @param mealsPerDay 하루 식사 횟수 (3, 4, 5 등)
+  /// @param sensitivity 민감도 ('low', 'normal', 'high')
+  /// @return low 상태 임계값 퍼센트 (기본 40% 대신)
+  static double getDynamicLowThreshold({
+    required int mealsPerDay,
+    String sensitivity = 'normal',
+  }) {
+    // 기본 임계값: 100% / 식사 횟수
+    final basicThreshold = 100.0 / mealsPerDay;
+    
+    // 민감도에 따른 조정 계수
+    double sensitivityMultiplier;
+    switch (sensitivity.toLowerCase()) {
+      case 'low':
+        sensitivityMultiplier = 0.7; // 덜 민감 (더 낮은 임계값)
+        break;
+      case 'high':
+        sensitivityMultiplier = 1.1; // 더 민감 (더 높은 임계값)
+        break;
+      case 'normal':
+      default:
+        sensitivityMultiplier = 0.9; // 약간 버퍼
+        break;
+    }
+    
+    return basicThreshold * sensitivityMultiplier;
+  }
+
+  /// 다음 식사까지 남은 시간 계산 (Option 2)
+  ///
+  /// @param mealPattern 식사 패턴 데이터
+  /// @param currentTime 현재 시간
+  /// @return 다음 식사까지 남은 분 (-1 if no meal pattern)
+  static int getMinutesUntilNextMeal(
+    Map<String, dynamic>? mealPattern,
+    DateTime currentTime,
+  ) {
+    if (mealPattern == null) return -1;
+    
+    final meals = mealPattern['meals'] as List?;
+    if (meals == null || meals.isEmpty) return -1;
+    
+    final currentMinutes = currentTime.hour * 60 + currentTime.minute;
+    int? nextMealMinutes;
+    int minDiff = 24 * 60; // 하루 = 1440분
+    
+    for (final meal in meals) {
+      if (meal['enabled'] != true) continue;
+      
+      final time = meal['time'] as String?;
+      if (time == null) continue;
+      
+      // "HH:mm" 형식 파싱
+      final parts = time.split(':');
+      if (parts.length != 2) continue;
+      
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour == null || minute == null) continue;
+      
+      int mealMinutes = hour * 60 + minute;
+      
+      // 오늘의 이 식사까지 남은 시간
+      int diff = mealMinutes - currentMinutes;
+      
+      // 이미 지난 식사면 내일 계산
+      if (diff < 0) {
+        diff += 24 * 60;
+      }
+      
+      // 가장 가까운 식사 찾기
+      if (diff < minDiff) {
+        minDiff = diff;
+        nextMealMinutes = mealMinutes;
+      }
+    }
+    
+    return nextMealMinutes != null ? minDiff : -1;
+  }
+
+  /// 알림 발송 여부 결정 (Option 2 & 3)  ///
+  /// @param minutesUntilNextMeal 다음 식사까지 남은 시간 (분)
+  /// @param sensitivity 민감도 설정
+  /// @return true면 알림 발송, false면 억제
+  static bool shouldSendAlert({
+    required int minutesUntilNextMeal,
+    String sensitivity = 'normal',
+  }) {
+    if (minutesUntilNextMeal < 0) return true; // 식사 패턴 없으면 항상 발송
+    
+    // 민감도에 따른 억제 시간 (분)
+    int suppressionThreshold;
+    switch (sensitivity.toLowerCase()) {
+      case 'low':
+        suppressionThreshold = 30; // 30분 이내만 억제
+        break;
+      case 'high':
+        suppressionThreshold = 90; // 1.5시간 이내 억제
+        break;
+      case 'normal':
+      default:
+        suppressionThreshold = 60; // 1시간 이내 억제
+        break;
+    }
+    
+    // 다음 식사까지 억제 시간 이내면 알림 억제
+    return minutesUntilNextMeal > suppressionThreshold;
+  }
 }

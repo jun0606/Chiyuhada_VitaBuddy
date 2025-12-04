@@ -124,10 +124,10 @@ class _PolygonTestScreenState extends State<PolygonTestScreen> {
                       _buildPoseBtn('🤔 배고픔', BodyPose.touchBelly),
                       _buildPoseBtn('🙌 팔들기', BodyPose.armsUp),
                       _buildPoseBtn('👋 손흔들기', BodyPose.waveHand),
-                      _buildPoseBtn('🙇 숙이기', BodyPose.bendForward),
-                      _buildPoseBtn('🦘 점프', BodyPose.jump),
-                      _buildPoseBtn('😔 고개숙임', BodyPose.headDown),
+                      // 제거: _buildPoseBtn('🙇 숙이기', BodyPose.bendForward), - 아바타 구조상 불가
+                      // 제거: _buildPoseBtn('😔 고개숙임', BodyPose.headDown), - 아바타 구조상 불가
                       _buildPoseBtn('✋ 거부', BodyPose.refuse),
+                      _buildPoseBtn('🦸 승리', BodyPose.victory),
                     ],
                   ),
                 ],

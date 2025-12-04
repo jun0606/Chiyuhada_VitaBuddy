@@ -12,21 +12,6 @@ enum BodyPose {
   /// 팔 올리기 (기쁨, 목표 달성)
   armsUp,
 
-  /// 손 흔들기 (거부)
-  waveHand,
-
-  /// 앞으로 숙이기 (힘듦, 과식)
-  bendForward,
-
-  /// 점프 (매우 기쁨, 목표 달성)
-  jump,
-
-  /// 고개 숙이기 (슬픔, 배고픔)
-  headDown,
-
-  /// 만세 (환호, 저체중 목표 달성)
-  cheer,
-
   /// 인사 (정상 목표 달성)
   greeting,
 
@@ -35,6 +20,21 @@ enum BodyPose {
 
   /// 거부 (과식 경고)
   refuse,
+
+  /// 환호 (만세)
+  cheer,
+
+  /// 손 흔들기
+  waveHand,
+
+  /// 승리 (슈퍼맨 포즈)
+  victory,
+
+  /// 앞으로 숙이기 (사용 중지됨 - 호환성 유지)
+  bendForward,
+
+  /// 고개 숙이기 (사용 중지됨 - 호환성 유지)
+  headDown,
 }
 
 /// 포즈 키프레임 (시퀀스의 한 단계)
@@ -121,12 +121,12 @@ class BodyPoseData {
     neckAngle: -0.3, // 배를 보도록
   );
 
-  /// 팔 올리기 (기쁨) - 크게
+  /// 팔 올리기 (기쁨) - V자 만세 (크로스 방지)
   static const BodyPoseData armsUp = BodyPoseData(
-    leftShoulderAngle: -3.2, // 팔 더 크게 위로
-    rightShoulderAngle: 3.2, // 팔 더 크게 위로
-    leftElbowAngle: -0.3,
-    rightElbowAngle: 0.3,
+    leftShoulderAngle: 2.0, // greeting 패턴 적용 (양수)
+    rightShoulderAngle: -2.0, // greeting 패턴 적용 (음수)
+    leftElbowAngle: 0.1,
+    rightElbowAngle: -0.1,
     leftHipAngle: 0.0,
     rightHipAngle: 0.0,
     leftKneeAngle: 0.0,
@@ -161,21 +161,6 @@ class BodyPoseData {
     rightKneeAngle: 0.0,
     torsoAngle: 0.2, // 앞으로 숙임
     neckAngle: -0.4, // 고개 아래
-  );
-
-  /// 점프 (매우 기쁨)
-  static const BodyPoseData jump = BodyPoseData(
-    leftShoulderAngle: -2.0,
-    rightShoulderAngle: 2.0,
-    leftElbowAngle: -0.5,
-    rightElbowAngle: 0.5,
-    leftHipAngle: -0.3, // 다리 올림
-    rightHipAngle: -0.3,
-    leftKneeAngle: -0.8, // 무릎 굽힘
-    rightKneeAngle: -0.8,
-    torsoAngle: 0.0,
-    neckAngle: 0.3,
-    verticalOffset: -20.0, // 위로 점프
   );
 
   /// 고개 숙이기 (슬픔)
@@ -220,32 +205,32 @@ class BodyPoseData {
     neckAngle: 0.15, // 고개 기울기
   );
 
-  /// 스트레칭 (안도)
+  /// 스트레칭 (기지개) - 팔을 위로 쭉 뻗음
   static const BodyPoseData stretch = BodyPoseData(
-    leftShoulderAngle: -1.5, // 양팔 벌리기
-    rightShoulderAngle: 1.5,
-    leftElbowAngle: -1.5, // 머리 뒤로
-    rightElbowAngle: 1.5,
+    leftShoulderAngle: -2.8, // 팔을 위로 (약 160도)
+    rightShoulderAngle: 2.8,
+    leftElbowAngle: -0.1, // 팔꿈치를 거의 폄
+    rightElbowAngle: 0.1,
     leftHipAngle: 0.0,
     rightHipAngle: 0.0,
     leftKneeAngle: 0.0,
     rightKneeAngle: 0.0,
     torsoAngle: 0.0,
-    neckAngle: 0.1,
+    neckAngle: 0.2, // 고개를 약간 들어 하늘 보기
   );
 
-  /// 거부 (과식 - 그만 먹기 제스처)
+  /// 거부 (과식 - 그만 먹기 제스처) -> 가슴 윗부분에 양손 모으기
   static const BodyPoseData refuse = BodyPoseData(
-    leftShoulderAngle: -1.0, // 팔을 약간 들어올림
-    rightShoulderAngle: 1.0,
-    leftElbowAngle: -1.5, // 팔꿈치를 굽혀서 손바닥을 보이는 느낌 (Stop)
-    rightElbowAngle: 1.5,
+    leftShoulderAngle: 0.3, // 왼쪽 팔을 몸에 더 가깝게
+    rightShoulderAngle: -0.3, // 오른쪽 팔을 몸에서 더 멀게
+    leftElbowAngle: -2.4, // 왼쪽 하박을 가슴 쪽으로 더 높이 (2.1 → 2.4)
+    rightElbowAngle: 2.4, // 오른쪽 하박을 가슴 쪽으로 더 높이
     leftHipAngle: 0.0,
     rightHipAngle: 0.0,
     leftKneeAngle: 0.0,
     rightKneeAngle: 0.0,
-    torsoAngle: -0.1, // 약간 뒤로 물러섬
-    neckAngle: 0.0,
+    torsoAngle: -0.2, // 몸을 뒤로 젖힘
+    neckAngle: -0.1, // 고개를 약간 뒤로
   );
 }
 
@@ -262,8 +247,6 @@ class BodyPoseCalculator {
         return BodyPoseData.waveHand;
       case BodyPose.bendForward:
         return BodyPoseData.bendForward;
-      case BodyPose.jump:
-        return BodyPoseData.jump;
       case BodyPose.headDown:
         return BodyPoseData.headDown;
       case BodyPose.cheer:
@@ -315,160 +298,23 @@ class BodyPoseCalculator {
   /// 시퀀스 기반 포즈 반환 (완전한 동작 사이클)
   static PoseSequence? getSequence(BodyPose pose) {
     switch (pose) {
-      case BodyPose.jump:
-        return _jumpSequence;
       case BodyPose.waveHand:
         return _waveHandSequence;
       case BodyPose.cheer:
         return _cheerSequence;
       case BodyPose.greeting:
         return _greetingSequence;
+      case BodyPose.bendForward:
+        return _bendForwardSequence;
+      case BodyPose.touchBelly:
+        return _touchBellySequence;
+      case BodyPose.victory:
+        return _victorySequence;
       default:
         return null; // 시퀀스 없음, 단일 포즈 사용
     }
   }
 
-  // 🦘 점프 시퀀스 (개선: 자연스러운 다리 동작)
-  static final PoseSequence _jumpSequence = PoseSequence(
-    keyframes: [
-      // 1. 준비 단계 1 (살짝 웅크리기 시작)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: -0.2,
-          rightShoulderAngle: -0.2,
-          leftElbowAngle: -0.2,
-          rightElbowAngle: -0.2,
-          leftHipAngle: 0.2,  // 살짝 구부림
-          rightHipAngle: 0.2,
-          leftKneeAngle: 0.3, // 살짝 구부림
-          rightKneeAngle: 0.3,
-          torsoAngle: 0.1,    // 약간 앞으로
-          neckAngle: 0.0,
-          verticalOffset: 5.0, // 살짝 아래로
-        ),
-        0.15,
-      ),
-      // 2. 준비 단계 2 (완전히 웅크리기 - 최저점)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: 0.3,  // 팔 뒤로 스윙
-          rightShoulderAngle: 0.3,
-          leftElbowAngle: -0.3,
-          rightElbowAngle: -0.3,
-          leftHipAngle: 0.5,  // 많이 구부림
-          rightHipAngle: 0.5,
-          leftKneeAngle: 0.8, // 많이 구부림
-          rightKneeAngle: 0.8,
-          torsoAngle: 0.3,    // 앞으로 숙임
-          neckAngle: -0.1,
-          verticalOffset: 15.0, // 최대한 아래로
-        ),
-        0.15,
-      ),
-      // 3. 도약 순간 (다리를 힘껏 펴며 발차기)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: -0.5, // 팔 위로 스윙 시작
-          rightShoulderAngle: -0.5,
-          leftElbowAngle: -0.3,
-          rightElbowAngle: -0.3,
-          leftHipAngle: -0.1, // 시작 펴기
-          rightHipAngle: -0.1,
-          leftKneeAngle: 0.3, // 빠르게 펴기
-          rightKneeAngle: 0.3,
-          torsoAngle: 0.0,
-          neckAngle: 0.0,
-          verticalOffset: 5.0, // 상승 시작
-        ),
-        0.1,
-      ),
-      // 4. 상승 중 (다리를 완전히 펴고 상승)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: -1.2, // 팔을 크게 위로
-          rightShoulderAngle: -1.2,
-          leftElbowAngle: -0.2,
-          rightElbowAngle: -0.2,
-          leftHipAngle: -0.3, // 완전히 펴기
-          rightHipAngle: -0.3,
-          leftKneeAngle: -0.2, // 완전히 펴기
-          rightKneeAngle: -0.2,
-          torsoAngle: -0.1,    // 약간 뒤로
-          neckAngle: 0.1,
-          verticalOffset: -40.0, // 상승 중
-        ),
-        0.15,
-      ),
-      // 5. 공중 최고점 (다리 살짝 구부림)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: -1.2,
-          rightShoulderAngle: -1.2,
-          leftElbowAngle: -0.2,
-          rightElbowAngle: -0.2,
-          leftHipAngle: -0.2,
-          rightHipAngle: -0.2,
-          leftKneeAngle: -0.1,
-          rightKneeAngle: -0.1,
-          torsoAngle: 0.0,
-          neckAngle: 0.2,
-          verticalOffset: -60.0, // 최고점
-        ),
-        0.2,
-      ),
-      // 6. 착지 준비 (다리 구부리기 시작)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: -0.5, // 팔 내리며 균형
-          rightShoulderAngle: -0.5,
-          leftElbowAngle: -0.3,
-          rightElbowAngle: -0.3,
-          leftHipAngle: 0.3,  // 착지 준비
-          rightHipAngle: 0.3,
-          leftKneeAngle: 0.4, // 착지 준비
-          rightKneeAngle: 0.4,
-          torsoAngle: 0.2,
-          neckAngle: 0.0,
-          verticalOffset: -20.0, // 하강 중
-        ),
-        0.15,
-      ),
-      // 7. 착지 충격 흡수 (무릎과 엉덩이로 충격 흡수)
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: 0.2,
-          rightShoulderAngle: 0.2,
-          leftElbowAngle: -0.3,
-          rightElbowAngle: -0.3,
-          leftHipAngle: 0.4,  // 충격 흡수
-          rightHipAngle: 0.4,
-          leftKneeAngle: 0.5, // 충격 흡수
-          rightKneeAngle: 0.5,
-          torsoAngle: 0.2,
-          neckAngle: -0.1,
-          verticalOffset: 5.0, // 아직 약간 아래
-        ),
-        0.2,
-      ),
-      // 8. 정상 복귀
-      PoseKeyframe(
-        const BodyPoseData(
-          leftShoulderAngle: 0.0,
-          rightShoulderAngle: 0.0,
-          leftElbowAngle: -0.2,
-          rightElbowAngle: -0.2,
-          leftHipAngle: 0.0,
-          rightHipAngle: 0.0,
-          leftKneeAngle: 0.0,
-          rightKneeAngle: 0.0,
-          torsoAngle: 0.0,
-          neckAngle: 0.0,
-          verticalOffset: 0.0,
-        ),
-        0.15,
-      ),
-    ],
-  );
 
   // 👋 손 흔들기 시퀀스 (귀엽고 부드럽게!)
   static final PoseSequence _waveHandSequence = PoseSequence(
@@ -681,5 +527,126 @@ class BodyPoseCalculator {
         0.25,
       ),
     ],
+  );
+
+  /// 앞으로 숙이며 시계추처럼 좌우로 흔들림 (과식으로 힘들어함)
+  static final PoseSequence _bendForwardSequence = PoseSequence(
+    keyframes: [
+      // 1. 왼쪽으로 기울임
+      PoseKeyframe(
+        const BodyPoseData(
+          leftShoulderAngle: 0.9,
+          rightShoulderAngle: 0.7,
+          leftElbowAngle: -0.6,
+          rightElbowAngle: 0.4,
+          leftHipAngle: 0.4,    // 왼쪽에 무게
+          rightHipAngle: 0.2,
+          leftKneeAngle: 0.25,  // 왼쪽 무릎 더 굽힘
+          rightKneeAngle: 0.05,
+          torsoAngle: 0.2,      // 0.1 → 0.2 (대칭)
+          neckAngle: -0.4,
+        ),
+        1.0,  // 왼쪽 1초
+      ),
+      
+      // 2. 오른쪽으로 기울임
+      PoseKeyframe(
+        const BodyPoseData(
+          leftShoulderAngle: 0.7,
+          rightShoulderAngle: 0.9,
+          leftElbowAngle: -0.4,
+          rightElbowAngle: 0.6,
+          leftHipAngle: 0.2,
+          rightHipAngle: 0.4,   // 오른쪽에 무게
+          leftKneeAngle: 0.05,
+          rightKneeAngle: 0.25, // 오른쪽 무릎 더 굽힘
+          torsoAngle: 0.2,      // 0.3 → 0.2 (대칭)
+          neckAngle: -0.4,
+        ),
+        1.0,  // 오른쪽 1초
+      ),
+    ],
+    loop: true,  // 왼쪽 ↔ 오른쪽 무한 왕복
+  );
+
+  /// 배 만지며 힘없이 흔들거림 (배고픔으로 힘없음)
+  static final PoseSequence _touchBellySequence = PoseSequence(
+    keyframes: [
+      // 1. 왼쪽으로 흔들거림 (힘없이)
+      PoseKeyframe(
+        const BodyPoseData(
+          leftShoulderAngle: 0.3,   // 배 만지기 유지
+          rightShoulderAngle: -0.4,
+          leftElbowAngle: -1.3,
+          rightElbowAngle: 1.3,
+          leftHipAngle: 0.1,        // 살짝 왼쪽으로 (작은 각도)
+          rightHipAngle: 0.0,
+          leftKneeAngle: 0.15,      // 약간 무릎 굽힘 (힘없음)
+          rightKneeAngle: 0.05,
+          torsoAngle: 0.05,         // 살짝 앞으로 (배고픔)
+          neckAngle: -0.4,          // 고개 숙임
+        ),
+        0.8,  // 0.8초 (불안정한 느낌)
+      ),
+      
+      // 2. 오른쪽으로 흔들거림 (힘없이)
+      PoseKeyframe(
+        const BodyPoseData(
+          leftShoulderAngle: 0.3,   // 배 만지기 유지
+          rightShoulderAngle: -0.4,
+          leftElbowAngle: -1.3,
+          rightElbowAngle: 1.3,
+          leftHipAngle: 0.0,
+          rightHipAngle: 0.1,       // 살짝 오른쪽으로
+          leftKneeAngle: 0.05,
+          rightKneeAngle: 0.15,     // 약간 무릎 굽힘
+          torsoAngle: 0.05,         // 유지
+          neckAngle: -0.4,
+        ),
+        0.8,  // 0.8초
+      ),
+    ],
+    loop: true,  // 힘없이 계속 흔들거림
+  );
+
+  /// 승리 포즈 (슈퍼맨) - 웅크렸다가 힘차게 뻗기
+  static final PoseSequence _victorySequence = PoseSequence(
+    keyframes: [
+      // 1. 준비 (살짝 웅크림)
+      PoseKeyframe(
+        const BodyPoseData(
+          leftShoulderAngle: 0.5,
+          rightShoulderAngle: 0.5,
+          leftElbowAngle: -1.0,   // 팔을 모음
+          rightElbowAngle: 1.0,
+          leftHipAngle: 0.2,      // 살짝 앉음
+          rightHipAngle: 0.2,
+          leftKneeAngle: 0.3,     // 무릎 굽힘
+          rightKneeAngle: 0.3,
+          torsoAngle: 0.1,        // 앞으로 숙임
+          neckAngle: -0.2,
+        ),
+        0.3,  // 0.3초 동안 준비
+      ),
+      
+      // 2. 승리 포즈! (한 팔 찌르기)
+      PoseKeyframe(
+        const BodyPoseData(
+          leftShoulderAngle: -0.5, // 왼손은 허리에 (당당하게)
+          rightShoulderAngle: 2.8, // 오른손 하늘 높이 찌르기! (약 160도)
+          leftElbowAngle: -1.2,    // 왼팔 굽혀서 허리에
+          rightElbowAngle: 0.0,    // 오른팔 쫙 폄
+          leftHipAngle: 0.0,       // 똑바로 섬
+          rightHipAngle: 0.0,
+          leftKneeAngle: 0.0,
+          rightKneeAngle: 0.0,
+          torsoAngle: -0.1,        // 가슴을 폄 (뒤로 살짝)
+          neckAngle: 0.2,          // 고개 들고 하늘 보기
+        ),
+        2.0,  // 2초 동안 포즈 유지
+      ),
+    ],
+    loop: false,  // 한 번만 재생하고 유지 (또는 loop: true로 반복 강조 가능, 일단 false로 유지)
+    returnToNeutral: true, // 끝나면 중립으로 복귀
   );
 }

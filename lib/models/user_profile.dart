@@ -6,6 +6,60 @@ import 'body_types.dart';
 
 part 'user_profile.g.dart';
 
+/// 수면 설정 데이터 모델
+class SleepConfig {
+  /// 수면 모드 ('manual', 'device', 'hybrid')
+  final String mode;
+  
+  /// 수동 수면 시작 시간 (HH:mm)
+  final String manualSleepTime;
+  
+  /// 수동 기상 시간 (HH:mm)
+  final String manualWakeTime;
+  
+  /// 마지막 기기 동기화 시간 (Milliseconds since epoch)
+  final int? lastDeviceSyncTime;
+
+  const SleepConfig({
+    this.mode = 'hybrid',
+    this.manualSleepTime = '23:00',
+    this.manualWakeTime = '07:00',
+    this.lastDeviceSyncTime,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'mode': mode,
+      'manualSleepTime': manualSleepTime,
+      'manualWakeTime': manualWakeTime,
+      'lastDeviceSyncTime': lastDeviceSyncTime,
+    };
+  }
+
+  factory SleepConfig.fromJson(Map<String, dynamic> json) {
+    return SleepConfig(
+      mode: json['mode'] ?? 'hybrid',
+      manualSleepTime: json['manualSleepTime'] ?? '23:00',
+      manualWakeTime: json['manualWakeTime'] ?? '07:00',
+      lastDeviceSyncTime: json['lastDeviceSyncTime'],
+    );
+  }
+
+  SleepConfig copyWith({
+    String? mode,
+    String? manualSleepTime,
+    String? manualWakeTime,
+    int? lastDeviceSyncTime,
+  }) {
+    return SleepConfig(
+      mode: mode ?? this.mode,
+      manualSleepTime: manualSleepTime ?? this.manualSleepTime,
+      manualWakeTime: manualWakeTime ?? this.manualWakeTime,
+      lastDeviceSyncTime: lastDeviceSyncTime ?? this.lastDeviceSyncTime,
+    );
+  }
+}
+
 @HiveType(typeId: 0)
 class UserProfile extends HiveObject {
   @HiveField(0)
@@ -55,6 +109,22 @@ class UserProfile extends HiveObject {
   @HiveField(12)
   Map<String, dynamic>? bodyCompositionData;
 
+  /// 식사 패턴 정보 (하루 식사 횟수, 시간 등)
+  /// 구조: {'mealsPerDay': 3, 'meals': [...], 'snacks': [...]}
+  @HiveField(13)
+  Map<String, dynamic>? mealPattern;
+
+  /// 에너지 알림 민감도 설정
+  /// 'low': 덜 민감 (알림 적게)
+  /// 'normal': 보통 (기본값)
+  /// 'high': 더 민감 (알림 많이)
+  @HiveField(14)
+  String? alertSensitivity;
+
+  /// 수면 설정
+  @HiveField(15)
+  SleepConfig sleepConfig;
+
   UserProfile({
     this.name,
     required this.height,
@@ -69,6 +139,9 @@ class UserProfile extends HiveObject {
     this.bodyShape,
     this.personalityTraits,
     this.bodyCompositionData,
+    this.mealPattern,
+    this.alertSensitivity,
+    this.sleepConfig = const SleepConfig(),
   }) {
     this.createdAt = createdAt ?? DateTime.now();
     this.updatedAt = updatedAt ?? DateTime.now();
@@ -211,6 +284,35 @@ class UserProfile extends HiveObject {
     return BodyShape.fromString(bodyShape!);
   }
 
+  /// 식사 패턴 정보 반환
+  Map<String, dynamic>? getMealPattern() {
+    return mealPattern;
+  }
+
+  /// 식사 패턴 저장
+  void setMealPattern(Map<String, dynamic> pattern) {
+    mealPattern = pattern;
+    updatedAt = DateTime.now();
+  }
+
+  /// 활성화된 식사 목록 반환
+  List<Map<String, dynamic>> getEnabledMeals() {
+    if (mealPattern == null) return [];
+    
+    final meals = mealPattern!['meals'] as List?;
+    if (meals == null) return [];
+    
+    return meals
+        .where((meal) => meal['enabled'] == true)
+        .map((meal) => meal as Map<String, dynamic>)
+        .toList();
+  }
+
+  /// 식사 패턴이 설정되었는지 확인
+  bool hasMealPattern() {
+    return mealPattern != null && mealPattern!.isNotEmpty;
+  }
+
   UserProfile copyWith({
     String? name,
     double? height,
@@ -225,6 +327,9 @@ class UserProfile extends HiveObject {
     String? bodyShape,
     Map<String, int>? personalityTraits,
     Map<String, dynamic>? bodyCompositionData,
+    Map<String, dynamic>? mealPattern,
+    String? alertSensitivity,
+    SleepConfig? sleepConfig,
   }) {
     return UserProfile(
       name: name ?? this.name,
@@ -240,6 +345,51 @@ class UserProfile extends HiveObject {
       bodyShape: bodyShape ?? this.bodyShape,
       personalityTraits: personalityTraits ?? this.personalityTraits,
       bodyCompositionData: bodyCompositionData ?? this.bodyCompositionData,
+      mealPattern: mealPattern ?? this.mealPattern,
+      alertSensitivity: alertSensitivity ?? this.alertSensitivity,
+      sleepConfig: sleepConfig ?? this.sleepConfig,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'age': age,
+      'height': height,
+      'weight': initialWeight,
+      'gender': gender,
+      'activityLevel': activityLevel,
+      'somatotype': somatotype,
+      'personalityTraits': personalityTraits,
+      'bodyComposition': bodyCompositionData, // Note: using raw data map
+      'mealPattern': mealPattern,
+      'alertSensitivity': alertSensitivity,
+      'sleepConfig': sleepConfig.toJson(),
+    };
+  }
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      name: json['name'],
+      age: json['age'],
+      height: json['height'],
+      initialWeight: json['weight'], // Note: json key is 'weight', field is 'initialWeight'
+      gender: json['gender'],
+      activityLevel: json['activityLevel'],
+      somatotype: json['somatotype'],
+      personalityTraits: json['personalityTraits'] != null
+          ? Map<String, int>.from(json['personalityTraits'])
+          : null,
+      bodyCompositionData: json['bodyComposition'] != null 
+          ? Map<String, dynamic>.from(json['bodyComposition']) 
+          : null,
+      mealPattern: json['mealPattern'] != null
+          ? Map<String, dynamic>.from(json['mealPattern'])
+          : null,
+      alertSensitivity: json['alertSensitivity'],
+      sleepConfig: json['sleepConfig'] != null
+          ? SleepConfig.fromJson(json['sleepConfig'])
+          : const SleepConfig(),
     );
   }
 }

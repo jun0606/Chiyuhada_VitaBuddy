@@ -12,6 +12,7 @@ class EnhancedCalorieGauge extends StatelessWidget {
   final double tdeeBurned;  // TDEE 소모 (시간 기반)
   final bool showLabel;
   final double height;
+  final Map<String, dynamic>? mealPattern; // 식사 패턴
 
   const EnhancedCalorieGauge({
     super.key,
@@ -21,6 +22,7 @@ class EnhancedCalorieGauge extends StatelessWidget {
     this.tdeeBurned = 0.0,
     this.showLabel = true,
     this.height = 30.0,
+    this.mealPattern,
   });
 
   @override
@@ -32,7 +34,11 @@ class EnhancedCalorieGauge extends StatelessWidget {
     
     // 상태 판단: 섭취 칼로리 기준 (색상은 여전히 섭취량 기준으로 위험도 표시가 안전함, 혹은 순칼로리 기준?)
     // 사용자 피드백: "순칼로리 값은 동기화되어야 한다" -> 상태도 순칼로리 기준이 맞음
-    final status = getCalorieStatus(max(0, netCalories), goal);
+    final status = getCalorieStatus(
+      current: max(0, netCalories),
+      goal: goal,
+      mealPattern: mealPattern,
+    );
     
     // 바 길이: 순 칼로리 / 목표 (음수면 0)
     final netPercentage = max(0.0, netCalories / goal);
@@ -222,6 +228,7 @@ class AnimatedCalorieGauge extends StatefulWidget {
   final bool showLabel;
   final double height;
   final Duration duration;
+  final Map<String, dynamic>? mealPattern; // 식사 패턴 추가
 
   const AnimatedCalorieGauge({
     super.key,
@@ -232,6 +239,7 @@ class AnimatedCalorieGauge extends StatefulWidget {
     this.showLabel = true,
     this.height = 30.0,
     this.duration = const Duration(milliseconds: 800),
+    this.mealPattern,
   });
 
   @override
@@ -320,6 +328,7 @@ class _AnimatedCalorieGaugeState extends State<AnimatedCalorieGauge>
           goal: widget.goal,
           showLabel: widget.showLabel,
           height: widget.height,
+          mealPattern: widget.mealPattern, // 식사 패턴 전달
         );
       },
     );

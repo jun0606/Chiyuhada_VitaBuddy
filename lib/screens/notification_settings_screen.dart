@@ -42,6 +42,9 @@ class _NotificationSettingsScreenState
     final prefs = await SharedPreferences.getInstance();
     final settingsJson = jsonEncode(_settings.toMap());
     await prefs.setString('notification_settings', settingsJson);
+    
+    // 백그라운드 서비스용 별도 저장 (Phase 13)
+    await prefs.setString('alert_sensitivity', _settings.alertSensitivity);
 
     // 알람 적용
     await _applyNotifications();
@@ -229,6 +232,11 @@ class _NotificationSettingsScreenState
             children: [
               // 시스템 알림 권한 상태
               _buildPermissionStatusCard(),
+              const SizedBox(height: 24),
+              
+              // 알림 민감도 설정 (Phase 13)
+              _buildSectionHeader('⚡ 에너지 알림 민감도'),
+              _buildSensitivityCard(),
               const SizedBox(height: 24),
 
               // 식사 알림 섹션
@@ -447,6 +455,89 @@ class _NotificationSettingsScreenState
     );
   }
 
+
+  Widget _buildSensitivityCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '에너지 부족 알림 빈도',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '설정에 따라 알림을 더 자주 받거나 줄일 수 있습니다.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildSensitivityOption('low', '둔감', '알림 최소화'),
+                const SizedBox(width: 8),
+                _buildSensitivityOption('normal', '보통', '기본 설정'),
+                const SizedBox(width: 8),
+                _buildSensitivityOption('high', '민감', '자주 알림'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSensitivityOption(String value, String label, String subLabel) {
+    final isSelected = _settings.alertSensitivity == value;
+    
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _settings.alertSensitivity = value;
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFE8F5E9) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF4CAF50) : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? const Color(0xFF2E7D32) : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isSelected ? const Color(0xFF388E3C) : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildPermissionStatusCard() {
     return FutureBuilder<PermissionStatus>(

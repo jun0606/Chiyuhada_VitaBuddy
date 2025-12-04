@@ -6,13 +6,14 @@ import '../models/body_types.dart';
 import '../models/body_composition.dart';
 import 'home_screen.dart';
 
-/// 고급 프로필 설정 화면 (5단계)
+/// 고급 프로필 설정 화면 (6단계)
 /// 
 /// Step 1: 기본 정보
-/// Step 2: 체질 선택
-/// Step 3: 체형 선택
-/// Step 4: 상세 정보
-/// Step 5: 성격 테스트
+/// Step 2: 식사 패턴
+/// Step 3: 체질 선택
+/// Step 4: 체형 선택
+/// Step 5: 상세 정보
+/// Step 6: 성격 테스트
 class EnhancedProfileSetupScreen extends StatefulWidget {
   const EnhancedProfileSetupScreen({super.key});
 
@@ -25,7 +26,7 @@ class _EnhancedProfileSetupScreenState
     extends State<EnhancedProfileSetupScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
-  final int _totalSteps = 5;
+  final int _totalSteps = 6;
 
   // Step 1: 기본 정보
   final _nameController = TextEditingController();
@@ -35,16 +36,19 @@ class _EnhancedProfileSetupScreenState
   int _age = 30;
   String _activityLevel = 'moderate';
 
-  // Step 2: 체질 선택
+  // Step 2: 식사 패턴
+  Map<String, dynamic>? _mealPattern;
+
+  // Step 3: 체질 선택
   Somatotype? _selectedSomatotype;
 
-  // Step 3: 체형 선택
+  // Step 4: 체형 선택
   BodyShape? _selectedBodyShape;
 
-  // Step 4: 상세 정보
+  // Step 5: 상세 정보
   MuscleType _muscleType = MuscleType.medium;
 
-  // Step 5: 성격 테스트
+  // Step 6: 성격 테스트
   double _extraversion = 50.0;
   double _conscientiousness = 50.0;
   double _neuroticism = 50.0;
@@ -113,6 +117,11 @@ class _EnhancedProfileSetupScreenState
 
     // BodyComposition 저장
     profile.setBodyComposition(bodyComposition);
+    
+    // 식사 패턴 저장
+    if (_mealPattern != null) {
+      profile.setMealPattern(_mealPattern!);
+    }
 
     // 저장
     final appProvider = Provider.of<AppProvider>(context, listen: false);
@@ -153,10 +162,11 @@ class _EnhancedProfileSetupScreenState
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 _buildStep1BasicInfo(),
-                _buildStep2SomatotypeSelection(),
-                _buildStep3BodyShapeSelection(),
-                _buildStep4DetailedInfo(),
-                _buildStep5PersonalityTest(),
+                _buildStep2MealPattern(),
+                _buildStep3SomatotypeSelection(),
+                _buildStep4BodyShapeSelection(),
+                _buildStep5DetailedInfo(),
+                _buildStep6PersonalityTest(),
               ],
             ),
           ),
@@ -194,15 +204,17 @@ class _EnhancedProfileSetupScreenState
 
   bool _canProceed() {
     switch (_currentStep) {
-      case 0:
+      case 0: // 기본 정보
         return _height > 0 && _weight > 0 && _age > 0;
-      case 1:
+      case 1: // 식사 패턴
+        return _mealPattern != null && _mealPattern!.isNotEmpty;
+      case 2: // 체질 선택
         return _selectedSomatotype != null;
-      case 2:
+      case 3: // 체형 선택
         return _selectedBodyShape != null;
-      case 3:
+      case 4: // 상세 정보
         return true;
-      case 4:
+      case 5: // 성격 테스트
         return true;
       default:
         return false;
@@ -335,8 +347,125 @@ class _EnhancedProfileSetupScreenState
     );
   }
 
-  // ===== Step 2: 체질 선택 =====
-  Widget _buildStep2SomatotypeSelection() {
+  // ===== Step 2: 식사 패턴 ====="
+  Widget _buildStep2MealPattern() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '식사 패턴 설정',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '하루 식사 패턴을 설정하면 맞춤 알림을 받을 수 있어요.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 24),
+          
+          // 프리셋 버튼들
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildMealPresetChip('2식', 2),
+              _buildMealPresetChip('3식 (권장)', 3),
+              _buildMealPresetChip('4식+', 4),
+            ],
+          ),
+          
+          if (_mealPattern != null) ...[
+            const SizedBox(height: 24),
+            Text(
+              '설정된 식사 시간',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            ..._buildMealTimesList(),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildMealPresetChip(String label, int mealCount) {
+    final isSelected = _mealPattern != null && 
+        (_mealPattern!['mealsPerDay'] as int?) == mealCount;
+    
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _applyMealPreset(mealCount);
+          });
+        }
+      },
+    );
+  }
+  
+  void _applyMealPreset(int mealCount) {
+    List<Map<String, dynamic>> meals;
+    
+    switch (mealCount) {
+      case 2:
+        meals = [
+          {'name': '점심', 'enabled': true, 'hour': 12, 'minute': 0},
+          {'name': '저녁', 'enabled': true, 'hour': 18, 'minute': 0},
+        ];
+        break;
+      case 3:
+        meals = [
+          {'name': '아침', 'enabled': true, 'hour': 7, 'minute': 0},
+          {'name': '점심', 'enabled': true, 'hour': 12, 'minute': 0},
+          {'name': '저녁', 'enabled': true, 'hour': 18, 'minute': 0},
+        ];
+        break;
+      case 4:
+        meals = [
+          {'name': '아침', 'enabled': true, 'hour': 7, 'minute': 0},
+          {'name': '오전간식', 'enabled': true, 'hour': 10, 'minute': 30},
+          {'name': '점심', 'enabled': true, 'hour': 12, 'minute': 0},
+          {'name': '저녁', 'enabled': true, 'hour': 18, 'minute': 0},
+        ];
+        break;
+      default:
+        meals = [];
+    }
+    
+    _mealPattern = {
+      'mealsPerDay': mealCount,
+      'meals': meals,
+      'snacks': [],
+    };
+  }
+  
+  List<Widget> _buildMealTimesList() {
+    final meals = _mealPattern!['meals'] as List;
+    return meals.map((meal) {
+      final name = meal['name'] as String;
+      final hour = meal['hour'] as int;
+      final minute = meal['minute'] as int;
+      final timeString = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+      
+      return Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: const Icon(Icons.restaurant),
+          title: Text(name),
+          trailing: Text(timeString, style: Theme.of(context).textTheme.titleMedium),
+        ),
+      );
+    }).toList();
+  }
+
+  // ===== Step 3: 체질 선택 =====
+  Widget _buildStep3SomatotypeSelection() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -428,8 +557,8 @@ class _EnhancedProfileSetupScreenState
     );
   }
 
-  // ===== Step 3: 체형 선택 =====
-  Widget _buildStep3BodyShapeSelection() {
+  // ===== Step 4: 체형 선택 =====
+  Widget _buildStep4BodyShapeSelection() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -511,8 +640,8 @@ class _EnhancedProfileSetupScreenState
     );
   }
 
-  // ===== Step 4: 상세 정보 =====
-  Widget _buildStep4DetailedInfo() {
+  // ===== Step 5: 상세 정보 =====
+  Widget _buildStep5DetailedInfo() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -572,8 +701,8 @@ class _EnhancedProfileSetupScreenState
     );
   }
 
-  // ===== Step 5: 성격 테스트 =====
-  Widget _buildStep5PersonalityTest() {
+  // ===== Step 6: 성격 테스트 =====
+  Widget _buildStep6PersonalityTest() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(

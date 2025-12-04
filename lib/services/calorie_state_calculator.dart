@@ -233,7 +233,7 @@ class CalorieStateCalculator {
       case CalorieState.low:
         // 배고픔 상태
         if (bmiCategory == 'underweight') {
-          return BodyPose.bendForward; // 방전 (비틀거림/숙임)
+          return BodyPose.touchBelly; // bendForward → touchBelly (숙이기 불가)
         } else if (bmiCategory == 'overweight' || bmiCategory == 'obese') {
           return BodyPose.neutral; // 인내 (굳건히 버팀)
         } else {
@@ -244,7 +244,7 @@ class CalorieStateCalculator {
       case CalorieState.achieved:
         // 적정 상태
         if (bmiCategory == 'underweight') {
-          return BodyPose.jump; // 활력 (에너지 넘침)
+          return BodyPose.cheer; // 활력 (환호로 변경)
         } else if (bmiCategory == 'overweight' || bmiCategory == 'obese') {
           return BodyPose.stretch; // 준비 (운동 의지)
         } else {
@@ -259,7 +259,7 @@ class CalorieStateCalculator {
         } else if (bmiCategory == 'overweight' || bmiCategory == 'obese') {
           return BodyPose.refuse; // 거부/후회 (강한 부정)
         } else {
-          return BodyPose.headDown; // 나른함 (식곤증)
+          return BodyPose.neutral; // headDown → neutral (숙이기 불가)
         }
     }
   }

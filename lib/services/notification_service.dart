@@ -286,6 +286,105 @@ class NotificationService {
     );
   }
 
+  /// 식사 패턴 기반 알림 일괄 설정
+  Future<void> setupMealPatternNotifications(Map<String, dynamic> mealPattern) async {
+    // 1. 기존 식사 알림 모두 취소
+    await cancelNotification(NotificationIds.breakfast);
+    await cancelNotification(NotificationIds.lunch);
+    await cancelNotification(NotificationIds.dinner);
+    await cancelNotification(NotificationIds.morningSnack);
+    await cancelNotification(NotificationIds.afternoonSnack);
+    
+    // 2. mealPattern에서 enabled된 식사만 알림 등록
+    final meals = mealPattern['meals'] as List?;
+    if (meals != null) {
+      for (var meal in meals) {
+        if (meal['enabled'] == true) {
+          final mealName = meal['name'] as String;
+          final hour = meal['hour'] as int;
+          final minute = meal['minute'] as int;
+          
+          // 동적 ID 생성 (해시 기반)
+          final notificationId = mealName.hashCode % 900 + 20; // 20~919 범위
+          
+          await scheduleDailyNotification(
+            id: notificationId,
+            title: _getMealTitle(mealName),
+            body: _getMealBody(mealName),
+            time: TimeOfDay(hour: hour, minute: minute),
+            payload: 'meal_$mealName',
+          );
+        }
+      }
+    }
+    
+    // 3. 간식 알림 설정 (있다면)
+    final snacks = mealPattern['snacks'] as List?;
+    if (snacks != null) {
+      for (var snack in snacks) {
+        if (snack['enabled'] == true) {
+          final snackType = snack['type'] as String;
+          final hour = snack['hour'] as int;
+          final minute = snack['minute'] as int;
+          
+          final notificationId = snackType == 'morning' 
+              ? NotificationIds.morningSnack 
+              : NotificationIds.afternoonSnack;
+          
+          await scheduleDailyNotification(
+            id: notificationId,
+            title: _getSnackTitle(snackType),
+            body: '건강한 간식으로 에너지를 충전하세요!',
+            time: TimeOfDay(hour: hour, minute: minute),
+            payload: 'snack_$snackType',
+          );
+        }
+      }
+    }
+  }
+  
+  /// 식사 타입에 따른 알림 제목 생성
+  String _getMealTitle(String mealName) {
+    final normalized = mealName.toLowerCase();
+    
+    if (normalized.contains('아침') || normalized.contains('breakfast')) {
+      return '좋은 아침이에요! ☀️';
+    } else if (normalized.contains('점심') || normalized.contains('lunch')) {
+      return '점심 시간이에요! 🍱';
+    } else if (normalized.contains('저녁') || normalized.contains('dinner')) {
+      return '저녁 식사 시간이에요! 🌙';
+    } else if (normalized.contains('브런치') || normalized.contains('brunch')) {
+      return '브런치 시간이에요! 🥞';
+    } else {
+      return '$mealName 시간이에요! 🍽️';
+    }
+  }
+  
+  /// 식사 타입에 따른 알림 내용 생성
+  String _getMealBody(String mealName) {
+    final normalized = mealName.toLowerCase();
+    
+    if (normalized.contains('아침') || normalized.contains('breakfast')) {
+      return '영양 가득한 아침 식사로 활기찬 하루를 시작하세요!';
+    } else if (normalized.contains('점심') || normalized.contains('lunch')) {
+      return '균형 잡힌 점심으로 오후 활력을 채워보세요!';
+    } else if (normalized.contains('저녁') || normalized.contains('dinner')) {
+      return '건강한 저녁 식사로 하루를 마무리하세요!';
+    } else {
+      return '맛있고 건강한 식사를 즐기세요!';
+    }
+  }
+  
+  /// 간식 타입에 따른 알림 제목 생성
+  String _getSnackTitle(String snackType) {
+    if (snackType == 'morning') {
+      return '오전 간식 시간이에요! 🍎';
+    } else {
+      return '오후 간식 시간이에요! 🥨';
+    }
+  }
+
+
   // 체중 체크 알림 예약
   Future<void> scheduleWeightCheckReminder({
     required int hour,

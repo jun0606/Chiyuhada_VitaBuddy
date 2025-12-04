@@ -70,6 +70,9 @@ class NotificationSettings {
   TimeOfDay waterStartTime;
   TimeOfDay waterEndTime;
   int dailyWaterGoal; // ml
+  
+  // 알림 민감도 (low, normal, high)
+  String alertSensitivity;
 
   NotificationSettings({
     this.breakfastEnabled = false,
@@ -93,6 +96,7 @@ class NotificationSettings {
     this.waterStartTime = const TimeOfDay(hour: 8, minute: 0),
     this.waterEndTime = const TimeOfDay(hour: 22, minute: 0),
     this.dailyWaterGoal = 2000,
+    this.alertSensitivity = 'normal',
   })  : exerciseDays = exerciseDays ?? [1, 3, 5], // 기본: 월수금
         supplements = supplements ?? [];
 
@@ -125,9 +129,9 @@ class NotificationSettings {
       'waterInterval': waterInterval,
       'waterStartHour': waterStartTime.hour,
       'waterStartMinute': waterStartTime.minute,
-      'waterEndHour': waterEndTime.hour,
       'waterEndMinute': waterEndTime.minute,
       'dailyWaterGoal': dailyWaterGoal,
+      'alertSensitivity': alertSensitivity,
     };
   }
 
@@ -190,6 +194,7 @@ class NotificationSettings {
         minute: map['waterEndMinute'] as int? ?? 0,
       ),
       dailyWaterGoal: map['dailyWaterGoal'] as int? ?? 2000,
+      alertSensitivity: map['alertSensitivity'] as String? ?? 'normal',
     );
   }
 }

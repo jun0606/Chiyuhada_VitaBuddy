@@ -9,6 +9,8 @@ import '../services/data_migration_service.dart';
 import '../services/calorie_state_calculator.dart';
 import '../services/background_calorie_service.dart';
 import '../services/health_data_service.dart';
+import '../services/sleep_data_manager.dart';
+import '../services/enhanced_metabolism_calculator.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/advanced_avatar_widget.dart';
@@ -18,6 +20,7 @@ import '../avatar/face_expressions.dart';
 import '../avatar/clothing_colors.dart';
 import '../avatar/body_poses.dart';
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   UserProfile? _userProfile;
@@ -72,14 +75,38 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   double get tdeePerMinute => _tdeeCalories / 1440;
   
   /// TDEE 기반 시간 소모 (운동 시간 제외)
+  /// 
+  /// 실시간 BMR 및 활동 대사량 누적 계산 (Phase 16)
   double get tdeeBurnedCalories {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final elapsedMinutes = now.difference(startOfDay).inMinutes;
+    if (_userProfile == null) return 0.0;
     
-    // 경과 시간 - 운동 시간 = 순수 일상 활동 시간
-    final activeMinutes = max(0, elapsedMinutes - _exerciseTotalMinutes);
-    return tdeePerMinute * activeMinutes;
+    final now = DateTime.now();
+    
+    // 1. 00:00부터 현재까지의 누적 TDEE (BMR + 활동)
+    double accumulatedTDEE = EnhancedMetabolismCalculator.calculateAccumulatedTDEE(
+      _userProfile!, 
+      now
+    );
+    
+    // 2. 운동 시간 중복 제거
+    // 운동 중에는 '운동 칼로리'가 적용되므로, 해당 시간만큼의 '일반 TDEE 소모'는 차감해야 함
+    if (_exerciseTotalMinutes > 0) {
+      // 깨어있는 시간 기준 분당 소모율 추정 (단순화)
+      // (하루 TDEE - 수면BMR) / 깨어있는 시간... 은 복잡하므로
+      // 현재 시점의 '비수면 분당 소모율'을 사용하거나, 평균치를 사용.
+      // 여기서는 EnhancedMetabolismCalculator 내부 로직과 유사하게 추정.
+      
+      final double dailyBMR = EnhancedMetabolismCalculator.calculateEnhancedBMR(_userProfile!);
+      final double dailyTDEE = EnhancedMetabolismCalculator.calculateEnhancedTDEE(_userProfile!);
+      
+      // 대략적인 분당 활동 대사량 (깨어있는 시간 16시간 가정)
+      final double avgBurnPerMinute = dailyTDEE / 1440.0; 
+      
+      // 운동 시간만큼 차감 (단, 0보다 작아지지 않게)
+      accumulatedTDEE -= (avgBurnPerMinute * _exerciseTotalMinutes);
+    }
+    
+    return max(0.0, accumulatedTDEE);
   }
   
   /// 총 소모 칼로리 (운동 + TDEE)
@@ -113,6 +140,10 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   // 칼로리 상태
   bool get isOverCalorieLimit => _intakeCalories > _goalCalories;
   bool get isNearLimit => _intakeCalories > _goalCalories * 0.8;
+  
+  // 수면 모드 상태
+  bool _isSleepMode = false;
+  bool get isSleepMode => _isSleepMode;
 
   // 초기화
   Future<void> initialize() async {
@@ -165,6 +196,16 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       
       // 백그라운드 서비스 초기화
       await _initializeBackgroundService();
+
+      // 식사 패턴 알림 설정 (패턴이 있는 경우)
+      if (_userProfile != null && _userProfile!.hasMealPattern()) {
+        final mealPattern = _userProfile!.getMealPattern();
+        if (mealPattern != null) {
+          developer.log('🍽️ 식사 패턴 알림 설정 시작');
+          await NotificationService().setupMealPatternNotifications(mealPattern);
+          developer.log('✅ 식사 패턴 알림 설정 완료');
+        }
+      }
 
       // 자정 체크 타이머 시작
       _scheduleMidnightCheck();
@@ -263,10 +304,19 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     // 1분마다 UI 업데이트 (TDEE는 시간 경과에 따라 변함)
     _tdeeUpdateTimer = Timer.periodic(
       const Duration(minutes: 1),
-      (_) {
+      (_) async {
+        // 수면 상태 확인
+        if (_userProfile != null) {
+          final wasSleepMode = _isSleepMode;
+          _isSleepMode = await SleepDataManager().isAsleep(_userProfile!);
+          
+          if (wasSleepMode != _isSleepMode) {
+            developer.log('💤 수면 모드 변경: $_isSleepMode');
+          }
+        }
+        
         // 값은 getter에서 계산되므로 알림만 보내면 됨
         notifyListeners();
-        // developer.log('🔄 TDEE 업데이트: ${tdeeBurnedCalories.toInt()} kcal');
       },
     );
   }
@@ -302,6 +352,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     await prefs.setString(_keyCalorieMode, mode);
     
     notifyListeners();
+    _saveCalorieDataToPrefs(); // 목표 변경 후 저장
     developer.log('🎯 목표 업데이트: ${goal.toInt()} kcal ($mode)');
   }
 
@@ -326,6 +377,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       _errorMessage = '프로필 저장 오류: $e';
     } finally {
       _isLoading = false;
+      _saveCalorieDataToPrefs(); // 저장
       notifyListeners();
     }
   }
@@ -350,6 +402,8 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       
       // 🎭 칼로리 로드 후 아바타 상태 업데이트
       _updateAvatarByCalorieStatus();
+      
+      _saveCalorieDataToPrefs(); // 로드 후 저장 (동기화)
     } catch (e) {
       _errorMessage = '데이터 로드 오류: $e';
       developer.log('❌ 칼로리 로드 실패: $e');
@@ -365,8 +419,9 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       
       developer.log('📊 현재 섭취: $_intakeCalories / 목표: $_goalCalories');
       
-      // 🎭 음식 섭취 시 아바타 반응
-      _updateAvatarByCalorieStatus();
+      // 🎭 음식 섭취 시 아바타 반응은 홈 화면으로 돌아간 후 실행
+      // (home_screen.dart에서 triggerCeremony() 호출)
+      // triggerFoodAddedCeremony(); // 제거: 즉시 실행하지 않음
       
       // 플래시 효과 트리거
       _flashEvent = 'food';
@@ -375,6 +430,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       // 플래시 이벤트 초기화
       await Future.delayed(const Duration(milliseconds: 300));
       _flashEvent = null;
+      _saveCalorieDataToPrefs(); // 음식 추가 후 저장
       notifyListeners();
     } catch (e) {
       _errorMessage = '음식 추가 오류: $e';
@@ -409,8 +465,8 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     else if (percentage > 1.2) {
       developer.log('🔴 과식 범위 감지');
       newExpression = FaceExpressionType.stuffed;
-      newPose = BodyPose.bendForward;
-      developer.log('😰 과식 - 힘들어하는 아바타');
+      newPose = BodyPose.refuse;  // bendForward → refuse (숙이기 불가)
+      developer.log('😰 과식 - 더 이상 못 먹겠는 아바타');
     }
     // 😔 낮은 칼로리 (50% 미만)
     else if (percentage < 0.5) {
@@ -580,6 +636,28 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     });
   }
 
+  /// 음식 추가 시 승리 세리머니 트리거
+  void triggerFoodAddedCeremony() {
+    developer.log('=== 음식 추가 - 승리 세리머니 시작 ===');
+    
+    // 승리 포즈와 행복한 표정 설정
+    _currentExpression = FaceExpressionType.happy;
+    _currentPose = BodyPose.victory;
+    
+    // 자동 로테이션 일시 중지
+    resetExpressionTimer();
+    
+    notifyListeners();
+    
+    // 3초 후 정상 상태로 복귀 (애니메이션 2.3초 + 여유)
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_isDisposed) return;
+      developer.log('⏰ 3초 경과 - 승리 세리머니 종료, 상태 복귀');
+      _updateAvatarByCalorieStatus();
+      startAutoExpressionRotation();
+    });
+  }
+
   void _scheduleNextExpression() {
     if (!_autoRotationEnabled) return;
     
@@ -676,22 +754,31 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
   /// 축하 애니메이션 트리거 (칼로리 목표 달성 시 등)
   void triggerCeremony() {
+    print('🎉 [DEBUG] triggerCeremony() 시작');
+    
     // 칼로리 상태에 따라 적절한 표정과 포즈 설정
     final calorieStatus = CalorieStateCalculator.getState(_intakeCalories, _goalCalories);
     
+    print('🎉 [DEBUG] 칼로리 상태: $calorieStatus (섭취: $_intakeCalories, 목표: $_goalCalories)');
+    
     if (calorieStatus == CalorieState.optimal || calorieStatus == CalorieState.achieved) {
       // 이상적인 칼로리 섭취 - 기쁜 표정
+      print('😊 [DEBUG] optimal/achieved - happy + armsUp');
       setExpression(FaceExpressionType.happy, autoReturn: true);
       setPose(BodyPose.armsUp, autoReturn: true);
     } else if (calorieStatus == CalorieState.veryLow || calorieStatus == CalorieState.low) {
       // 너무 적게 섭취 - 배고픈 표정
+      print('😢 [DEBUG] veryLow/low - hungry + touchBelly');
       setExpression(FaceExpressionType.hungry, autoReturn: true);
       setPose(BodyPose.touchBelly, autoReturn: true);
     } else if (calorieStatus == CalorieState.exceeded || calorieStatus == CalorieState.excessive) {
       // 과다 섭취 - 거부 표정
+      print('😰 [DEBUG] exceeded/excessive - refuse + refuse');
       setExpression(FaceExpressionType.refuse, autoReturn: true);
       setPose(BodyPose.refuse, autoReturn: true);
     }
+    
+    print('🎉 [DEBUG] triggerCeremony() 완료');
   }
 
   Widget buildAvatarPreviewWidget({
@@ -754,7 +841,48 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   
   // ========== Phase 4: 헬스 데이터 통합 ==========
   
-  /// Health Connect/HealthKit 데이터 동기화
+  // ========== Phase 3: 백그라운드 서비스 데이터 동기화 ==========
+  
+  /// 칼로리 데이터를 SharedPreferences에 저장 (백그라운드 서비스용)
+  Future<void> _saveCalorieDataToPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 1. 섭취 및 운동 데이터 저장
+      await prefs.setDouble(_keyCurrentCalories, _intakeCalories); // 섭취량
+      await prefs.setDouble('exercise_burned_calories', _exerciseBurnedCalories);
+      await prefs.setInt('exercise_total_minutes', _exerciseTotalMinutes);
+      
+      // 2. 목표 저장
+      await prefs.setDouble(_keyGoalCalories, _goalCalories);
+      
+      // 3. 마지막 업데이트 시간
+      await prefs.setInt(_keyLastUpdate, DateTime.now().millisecondsSinceEpoch);
+      
+      // 4. 수면 설정 저장 (백그라운드에서 계산하기 위해)
+      if (_userProfile != null) {
+        final sleepConfig = _userProfile!.sleepConfig;
+        await prefs.setString('sleep_config_mode', sleepConfig.mode);
+        await prefs.setString('sleep_config_sleep_time', sleepConfig.manualSleepTime);
+        await prefs.setString('sleep_config_wake_time', sleepConfig.manualWakeTime);
+        
+        // 5. 식사 패턴 저장 (Phase 13 스마트 알림용)
+        if (_userProfile!.hasMealPattern()) {
+          final mealPattern = _userProfile!.getMealPattern();
+          if (mealPattern != null) {
+            await prefs.setString('meal_pattern', jsonEncode(mealPattern));
+          }
+        }
+      }
+      
+      // developer.log('💾 백그라운드 데이터 저장 완료');
+    } catch (e) {
+      developer.log('❌ 백그라운드 데이터 저장 실패: $e');
+    }
+  }
+
+
+  /// 헬스 데이터 동기화
   Future<void> syncHealthData() async {
     try {
       developer.log('🔄 헬스 데이터 동기화 시작...');
@@ -783,3 +911,4 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 }
+
