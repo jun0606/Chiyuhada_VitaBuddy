@@ -1,5 +1,6 @@
 import 'package:health/health.dart';
 import 'dart:developer' as developer;
+import 'database_service.dart';
 
 /// 헬스 데이터 통합 서비스
 /// 
@@ -216,16 +217,38 @@ class HealthDataService {
         return 0;
       }
       
-      // 3. 데이터베이스 연동 (DatabaseService import 필요)
-      // TODO: Week 3에서 UI와 함께 실제 DB 저장 구현 예정
-      developer.log('📝 동기화 준비 완료: ${workouts.length}개의 운동 데이터');
+      // 3. DatabaseService import 및 초기화
+      final DatabaseService dbService = DatabaseService();
       
-      // 향후 구현 예정:
-      // - external_id로 중복 체크
-      // - 데이터베이스에 저장
-      // - health_sync_log 업데이트
+      // 4. 중복 체크 및 저장
+      int savedCount = 0;
+      int skippedCount = 0;
       
-      return workouts.length;
+      for (var workout in workouts) {
+        final externalId = workout['id'] as String;
+        
+        // 중복 확인
+        final isDuplicate = await dbService.checkExerciseDuplicate(externalId);
+        
+        if (isDuplicate) {
+          developer.log('⏭️ 이미 동기화된 운동: $externalId');
+          skippedCount++;
+          continue;
+        }
+        
+        // DB에 저장
+        try {
+          await dbService.insertExerciseFromHealth(workout);
+          savedCount++;
+          developer.log('✅ 저장 완료: ${workout['type']} (${workout['duration_minutes']}분, ${workout['calories'].toInt()}kcal)');
+        } catch (e) {
+          developer.log('❌ 저장 실패: $externalId - $e');
+        }
+      }
+      
+      developer.log('📝 동기화 완료: $savedCount개 저장, $skippedCount개 건너뜀 (총 ${workouts.length}개)');
+      
+      return savedCount;
     } catch (e) {
       developer.log('❌ 동기화 실패: $e');
       return 0;

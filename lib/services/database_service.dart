@@ -457,6 +457,41 @@ class DatabaseService {
     return 0.0;
   }
 
+  /// Health 데이터로부터 운동 기록 저장
+  /// 
+  /// external_id를 통해 중복 방지
+  Future<int> insertExerciseFromHealth(Map<String, dynamic> workout) async {
+    Database db = await database;
+    
+    return await db.insert('exercise_records', {
+      'exercise_name': workout['type'] ?? 'Unknown',
+      'duration_minutes': workout['duration_minutes'] ?? 0,
+      'calories_burned': workout['calories'] ?? 0.0,
+      'date': (workout['start_time'] as String).split('T')[0],
+      'time': (workout['start_time'] as String).split('T')[1].substring(0, 5),
+      'source': workout['source'] ?? 'health_connect',
+      'exercise_type': workout['type'],
+      'distance_meters': workout['distance'],
+      'external_id': workout['id'], // UUID from Health Connect/HealthKit
+    });
+  }
+
+  /// external_id로 중복 확인
+  /// 
+  /// 동일한 external_id가 이미 존재하면 true 반환
+  Future<bool> checkExerciseDuplicate(String externalId) async {
+    Database db = await database;
+    
+    final results = await db.query(
+      'exercise_records',
+      where: 'external_id = ?',
+      whereArgs: [externalId],
+      limit: 1,
+    );
+    
+    return results.isNotEmpty;
+  }
+
   Future<void> deleteExerciseRecord(int id) async {
     Database db = await database;
     await db.delete('exercise_records', where: 'id = ?', whereArgs: [id]);
