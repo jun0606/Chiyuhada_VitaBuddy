@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
+import '../services/health_data_service.dart';
 import 'clothing_settings_screen.dart';
 import 'profile_edit_screen.dart';
 import 'notification_settings_screen.dart';
@@ -31,69 +34,85 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSettingsItem(
-            context,
-            '목표 칼로리 설정',
-            Icons.flag_rounded,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CalorieGoalSettingsScreen(),
-                ),
-              );
-            },
-          ),
+          _buildSettingsItem(context, '목표 칼로리 설정', Icons.flag_rounded, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CalorieGoalSettingsScreen(),
+              ),
+            );
+          }),
+          const SizedBox(height: 12),
+          _buildSettingsItem(context, '수면 설정', Icons.bedtime_rounded, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SleepSettingsScreen()),
+            );
+          }),
+          const SizedBox(height: 12),
+          _buildSettingsItem(context, '아바타 옷 설정', Icons.checkroom_rounded, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ClothingSettingsScreen()),
+            );
+          }),
+          const SizedBox(height: 12),
+          _buildSettingsItem(context, '프로필 수정', Icons.person_rounded, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+            );
+          }),
+          const SizedBox(height: 12),
+          _buildSettingsItem(context, '알림 설정', Icons.notifications_rounded, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const NotificationSettingsScreen(),
+              ),
+            );
+          }),
           const SizedBox(height: 12),
           _buildSettingsItem(
             context,
-            '수면 설정',
-            Icons.bedtime_rounded,
-            () {
-              Navigator.push(
+            '헬스 데이터 권한',
+            Icons.health_and_safety_rounded,
+            () async {
+              final appProvider = Provider.of<AppProvider>(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const SleepSettingsScreen(),
-                ),
+                listen: false,
               );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildSettingsItem(
-            context,
-            '아바타 옷 설정',
-            Icons.checkroom_rounded,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ClothingSettingsScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildSettingsItem(
-            context,
-            '프로필 수정',
-            Icons.person_rounded,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildSettingsItem(
-            context,
-            '알림 설정',
-            Icons.notifications_rounded,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
-              );
+              final healthService = HealthDataService();
+
+              // 권한 상태 확인
+              final hasPermission = await healthService.hasPermissions();
+
+              if (hasPermission) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('헬스 데이터 권한이 이미 허용되어 있습니다')),
+                );
+                return;
+              }
+
+              // 권한 요청
+              final permissionGranted = await healthService
+                  .requestPermissions();
+
+              if (permissionGranted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('헬스 데이터 권한이 허용되었습니다')),
+                );
+
+                // 권한 얻었으면 동기화 시도
+                await appProvider.syncHealthData();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('헬스 데이터 권한이 거부되었습니다. 설정에서 수동으로 허용해주세요'),
+                    duration: Duration(seconds: 5),
+                  ),
+                );
+              }
             },
           ),
         ],
@@ -135,7 +154,10 @@ class SettingsScreen extends StatelessWidget {
             color: Color(0xFF455A64),
           ),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0BEC5)),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: Color(0xFFB0BEC5),
+        ),
         onTap: onTap,
       ),
     );

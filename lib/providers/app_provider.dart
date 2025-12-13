@@ -964,7 +964,21 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       final hasPermission = await healthService.hasPermissions();
       if (!hasPermission) {
         developer.log('ℹ️ 헬스 데이터 권한 없음 (동기화 건너뜀)');
-        return;
+
+        // 권한 요청 시도
+        developer.log('🔄 헬스 데이터 권한 재요청 시도...');
+        final permissionGranted = await healthService.requestPermissions();
+
+        if (permissionGranted) {
+          developer.log('✅ 권한 재요청 성공, 동기화 재시도');
+          // 권한 얻었으면 동기화 진행
+        } else {
+          developer.log('❌ 권한 재요청 실패');
+          // 권한 없는 경우 사용자에게 알림 (오류 메시지로 설정)
+          _errorMessage = '헬스 데이터 권한이 필요합니다. 설정에서 건강 데이터 접근을 허용해주세요.';
+          notifyListeners();
+          return;
+        }
       }
 
       // 데이터 동기화
@@ -975,10 +989,16 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
       if (syncedCount > 0) {
         developer.log('✅ 헬스 데이터 동기화 완료: $syncedCount개');
+        // 성공 시 오류 메시지 클리어
+        if (_errorMessage?.contains('헬스 데이터 권한') == true) {
+          _errorMessage = null;
+        }
         notifyListeners(); // 데이터 변경 알림
       }
     } catch (e) {
       developer.log('❌ 헬스 데이터 동기화 실패: $e');
+      _errorMessage = '헬스 데이터 동기화 중 오류가 발생했습니다.';
+      notifyListeners();
     }
   }
 }
