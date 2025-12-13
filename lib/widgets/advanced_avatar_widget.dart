@@ -17,7 +17,8 @@ class AvatarController {
   void _attach(_AdvancedAvatarWidgetState state) => _state = state;
   void _detach() => _state = null;
 
-  void setExpression(FaceExpressionType type) => _state?.game.setExpression(type);
+  void setExpression(FaceExpressionType type) =>
+      _state?.game.setExpression(type);
   void setPose(BodyPose pose) => _state?.game.setPose(pose);
 }
 
@@ -79,14 +80,15 @@ class _AdvancedAvatarWidgetState extends State<AdvancedAvatarWidget> {
   @override
   void didUpdateWidget(covariant AdvancedAvatarWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // 옷 색상 업데이트 체크 (가장 먼저 확인)
     final oldColors = oldWidget.clothingColors ?? ClothingColors.defaultColors;
     final newColors = widget.clothingColors ?? ClothingColors.defaultColors;
-    
-    bool colorsChanged = oldColors.braColor.value != newColors.braColor.value ||
-                        oldColors.tightsColor.value != newColors.tightsColor.value;
-    
+
+    bool colorsChanged =
+        oldColors.braColor.value != newColors.braColor.value ||
+        oldColors.tightsColor.value != newColors.tightsColor.value;
+
     // 기본 속성 또는 옷 색상이 변경되었을 때 전체 업데이트
     if (oldWidget.bmi != widget.bmi ||
         oldWidget.height != widget.height ||
@@ -101,12 +103,12 @@ class _AdvancedAvatarWidgetState extends State<AdvancedAvatarWidget> {
         clothingColors: newColors, // 새로운 색상 적용
       );
     }
-    
+
     // 🎭 표정 변경 감지
     if (oldWidget.expression != widget.expression) {
       game.setExpression(widget.expression);
     }
-    
+
     // 🧘 포즈 변경 감지
     if (oldWidget.pose != widget.pose) {
       game.setPose(widget.pose);
@@ -115,11 +117,52 @@ class _AdvancedAvatarWidgetState extends State<AdvancedAvatarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.width,
-      height: widget.heightSize,
-      child: GameWidget(game: game),
-    );
+    try {
+      return SizedBox(
+        width: widget.width,
+        height: widget.heightSize,
+        child: GameWidget(
+          game: game,
+          errorBuilder: (error, stackTrace) {
+            debugPrint('🎮 아바타 게임 오류: $error');
+            debugPrint('🎮 스택 트레이스: $stackTrace');
+            return Container(
+              width: widget.width,
+              height: widget.heightSize,
+              color: Colors.grey[200],
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    SizedBox(height: 8),
+                    Text('아바타 로드 실패', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('🎭 아바타 위젯 빌드 오류: $e');
+      debugPrint('🎭 스택 트레이스: $stackTrace');
+      return Container(
+        width: widget.width,
+        height: widget.heightSize,
+        color: Colors.grey[200],
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 48),
+              SizedBox(height: 8),
+              Text('아바타 빌드 실패', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -159,7 +202,7 @@ class AdvancedAvatarGame extends FlameGame {
     );
     avatar.position = size / 2;
     add(avatar);
-    
+
     // 초기 상태 설정
     avatar.animator.setExpression(initialExpression);
     avatar.animator.setPose(initialPose);
@@ -179,10 +222,17 @@ class AdvancedAvatarGame extends FlameGame {
     if (clothingColors != null) {
       this.clothingColors = clothingColors;
     }
-    avatar.updateProperties(bmi, heightVal, gender, lifestyle, this.clothingColors);
+    avatar.updateProperties(
+      bmi,
+      heightVal,
+      gender,
+      lifestyle,
+      this.clothingColors,
+    );
   }
 
-  void setExpression(FaceExpressionType type) => avatar.animator.setExpression(type);
+  void setExpression(FaceExpressionType type) =>
+      avatar.animator.setExpression(type);
   void setPose(BodyPose pose) => avatar.animator.setPose(pose);
 }
 
@@ -218,8 +268,8 @@ class AdvancedAvatarComponent extends PositionComponent {
   late LegPart rightLeg;
 
   // Clothing parts
-  late SportsBraPart sportsBra;  // 스포츠 브라 (필수)
-  late TightsPart leftTights;  // 왼쪽 타이즈
+  late SportsBraPart sportsBra; // 스포츠 브라 (필수)
+  late TightsPart leftTights; // 왼쪽 타이즈
   late TightsPart rightTights; // 오른쪽 타이즈
   late PelvisCoverPart pelvisCover; // 골반 커버
   // late BodyPart? shorts;  // 반바지 (선택적, 주석 처리)
@@ -271,7 +321,7 @@ class AdvancedAvatarComponent extends PositionComponent {
     pelvis = PelvisPart(measurements: measurements);
     head = HeadPart(measurements: measurements);
     headCircle = HeadCirclePart(measurements: measurements);
-    face = FacePart(measurements: measurements, gender: gender);  // gender 전달
+    face = FacePart(measurements: measurements, gender: gender); // gender 전달
     leftCheek = CheekPart(measurements: measurements, isLeft: true);
     rightCheek = CheekPart(measurements: measurements, isLeft: false);
     leftEar = EarPart(measurements: measurements, isLeft: true);
@@ -296,33 +346,48 @@ class AdvancedAvatarComponent extends PositionComponent {
 
     // Positioning.
     // Hair is behind head
-    hair.position = Vector2(0, -measurements.torsoHeight * 0.95 - measurements.neckHeight);
+    hair.position = Vector2(
+      0,
+      -measurements.torsoHeight * 0.95 - measurements.neckHeight,
+    );
     hair.priority = -100;
-    
+
     // Shoulders (Visual only, arms attach to Torso coordinates)
-    leftShoulder.position = Vector2(-measurements.shoulderWidth / 2, -measurements.torsoHeight * 0.9);
-    rightShoulder.position = Vector2(measurements.shoulderWidth / 2, -measurements.torsoHeight * 0.9);
-    
+    leftShoulder.position = Vector2(
+      -measurements.shoulderWidth / 2,
+      -measurements.torsoHeight * 0.9,
+    );
+    rightShoulder.position = Vector2(
+      measurements.shoulderWidth / 2,
+      -measurements.torsoHeight * 0.9,
+    );
+
     // Neck connects to top of Torso
     neck.position = Vector2(0, -measurements.torsoHeight * 0.95);
-    
+
     // Head sits on Neck
     head.position = Vector2(0, -measurements.neckHeight);
-    
+
     // Front Hair sits on Head
     frontHair.position = Vector2(0, 0);
-    
+
     // Arms attach to Shoulder joints (approx top corners of Torso)
-    leftUpperArm.position = Vector2(-measurements.shoulderWidth / 2, -measurements.torsoHeight * 0.9);
-    rightUpperArm.position = Vector2(measurements.shoulderWidth / 2, -measurements.torsoHeight * 0.9);
-    
+    leftUpperArm.position = Vector2(
+      -measurements.shoulderWidth / 2,
+      -measurements.torsoHeight * 0.9,
+    );
+    rightUpperArm.position = Vector2(
+      measurements.shoulderWidth / 2,
+      -measurements.torsoHeight * 0.9,
+    );
+
     // Forearms attach to bottom of UpperArms
     leftForearm.position = Vector2(0, measurements.armLength);
     rightForearm.position = Vector2(0, measurements.armLength);
-    
+
     // Pelvis attaches to bottom of Torso
     pelvis.position = Vector2(0, 0);
-    
+
     // Legs attach to Hip sockets in Pelvis
     // Pelvis height is approx torsoHeight * 0.25
     final pelvisHeight = measurements.torsoHeight * 0.25;
@@ -336,7 +401,7 @@ class AdvancedAvatarComponent extends PositionComponent {
     // Tights attach to each leg
     leftTights.position = Vector2(0, 0);
     rightTights.position = Vector2(0, 0);
-    
+
     // Pelvis cover attaches to pelvis
     pelvisCover.position = Vector2(0, 0);
 
@@ -344,20 +409,20 @@ class AdvancedAvatarComponent extends PositionComponent {
     // shorts?.position = Vector2(0, 0);
 
     // Build hierarchy with proper rendering order.
-    
+
     // 다리
     pelvis.add(leftLeg);
     pelvis.add(rightLeg);
-    
+
     // 타이즈를 각 다리 위에 렌더링 (다리 형태를 따라감)
     leftLeg.add(leftTights);
     rightLeg.add(rightTights);
-    leftTights.priority = 5;   // 다리 위에 표시
+    leftTights.priority = 5; // 다리 위에 표시
     rightTights.priority = 5;
-    
+
     // 골반 커버를 골반 위에 렌더링
     pelvis.add(pelvisCover);
-    pelvisCover.priority = 5;  // 골반 위에 표시
+    pelvisCover.priority = 5; // 골반 위에 표시
 
     // 반바지 (선택적)
     // pelvis.add(shorts);
@@ -366,7 +431,7 @@ class AdvancedAvatarComponent extends PositionComponent {
     // 🎯 뒷머리를 루트 컴포넌트의 자식으로 추가 (가장 먼저 렌더링)
     // head와 위치/각도는 update에서 동기화
     add(hair);
-    hair.priority = -200;  // 모든 것보다 먼저 (가장 뒤)
+    hair.priority = -200; // 모든 것보다 먼저 (가장 뒤)
 
     add(leftShoulder);
     add(rightShoulder);
@@ -378,35 +443,35 @@ class AdvancedAvatarComponent extends PositionComponent {
 
     torso.add(neck);
     neck.add(head);
-    
+
     // 렌더링 순서: leftEar(-5) → rightEar(-5) → headCircle(0) → leftCheek(3) → rightCheek(3) → face(5) → frontHair(10)
     head.add(leftEar);
     leftEar.position = Vector2(0, 0);
-    leftEar.priority = -5;  // 귀 (머리 원보다 먼저)
-    
+    leftEar.priority = -5; // 귀 (머리 원보다 먼저)
+
     head.add(rightEar);
     rightEar.position = Vector2(0, 0);
     rightEar.priority = -5;
-    
+
     head.add(headCircle);
     headCircle.position = Vector2(0, 0);
-    headCircle.priority = 0;  // 머리 원
-    
+    headCircle.priority = 0; // 머리 원
+
     head.add(leftCheek);
     leftCheek.position = Vector2(0, 0);
-    leftCheek.priority = 12;  // 볼 (앞머리보다 위에 표시! 7 → 12)
-    
+    leftCheek.priority = 12; // 볼 (앞머리보다 위에 표시! 7 → 12)
+
     head.add(rightCheek);
     rightCheek.position = Vector2(0, 0);
     rightCheek.priority = 12;
-    
+
     head.add(face);
     face.position = Vector2(0, 0);
-    face.priority = 5;  // 얼굴
-    
+    face.priority = 5; // 얼굴
+
     head.add(frontHair);
     frontHair.position = Vector2(0, 0);
-    frontHair.priority = 10;  // 앞머리 (마지막)
+    frontHair.priority = 10; // 앞머리 (마지막)
     torso.add(pelvis);
     torso.add(leftUpperArm);
     leftUpperArm.priority = 20; // 스포츠 브라(15)보다 위에 표시
@@ -414,7 +479,7 @@ class AdvancedAvatarComponent extends PositionComponent {
     torso.add(rightUpperArm);
     rightUpperArm.priority = 20; // 스포츠 브라(15)보다 위에 표시
     rightUpperArm.add(rightForearm);
-    
+
     // Forearm position (attached to elbow)
     leftForearm.position = Vector2(0, measurements.armLength);
     rightForearm.position = Vector2(0, measurements.armLength);
@@ -440,7 +505,7 @@ class AdvancedAvatarComponent extends PositionComponent {
     leftForearm.angle = angles['leftElbow'] ?? 0.0;
     rightForearm.angle = angles['rightElbow'] ?? 0.0;
     torso.angle = angles['torso'] ?? 0.0; // 몸통 회전 적용
-    
+
     // ↕️ 수직 오프셋 적용 (점프 등)
     final verticalOffset = angles['verticalOffset'] ?? 0.0;
     torso.position = Vector2(0, verticalOffset);
@@ -450,33 +515,40 @@ class AdvancedAvatarComponent extends PositionComponent {
     final torsoAngle = torso.angle;
     final neckAngle = neck.angle;
     final headAngle = head.angle;
-    
+
     // neck 위치를 torso 회전만큼 변환
     final neckRotated = Vector2(
       neck.position.x * cos(torsoAngle) - neck.position.y * sin(torsoAngle),
       neck.position.x * sin(torsoAngle) + neck.position.y * cos(torsoAngle),
     );
-    
+
     // head 위치를 torso + neck 회전만큼 변환
     final totalNeckAngle = torsoAngle + neckAngle;
     final headRotated = Vector2(
-      head.position.x * cos(totalNeckAngle) - head.position.y * sin(totalNeckAngle),
-      head.position.x * sin(totalNeckAngle) + head.position.y * cos(totalNeckAngle),
+      head.position.x * cos(totalNeckAngle) -
+          head.position.y * sin(totalNeckAngle),
+      head.position.x * sin(totalNeckAngle) +
+          head.position.y * cos(totalNeckAngle),
     );
-    
+
     // 최종 위치: torso + 회전된 neck + 회전된 head
     hair.position = torso.position + neckRotated + headRotated;
-    
+
     // 최종 각도: 모든 회전 누적
     hair.angle = torsoAngle + neckAngle + headAngle;
 
     // 표정 업데이트 (FacePart에 FaceExpression 객체 + 타입 전달)
     final faceExpression = animator.getFaceExpression();
-    final expressionType = animator.currentExpression;  // 표정 타입 직접 전달
+    final expressionType = animator.currentExpression; // 표정 타입 직접 전달
     final eyeState = animator.getEyeState();
     final mouthState = animator.getMouthState();
-    face.updateFromExpression(faceExpression, expressionType, eyeState, mouthState);
-    
+    face.updateFromExpression(
+      faceExpression,
+      expressionType,
+      eyeState,
+      mouthState,
+    );
+
     // 🍎 볼에 표정 동기화 (붉은 기 표시를 위해)
     leftCheek.updateMouthState(mouthState);
     rightCheek.updateMouthState(mouthState);
