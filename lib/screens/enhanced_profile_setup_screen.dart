@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../services/health_data_service.dart';
 import '../models/user_profile.dart';
 import '../models/body_types.dart';
 import '../models/body_composition.dart';
 import 'home_screen.dart';
 
-/// 고급 프로필 설정 화면 (6단계)
-/// 
+/// 고급 프로필 설정 화면 (7단계)
+///
 /// Step 1: 기본 정보
 /// Step 2: 식사 패턴
 /// Step 3: 체질 선택
 /// Step 4: 체형 선택
 /// Step 5: 상세 정보
 /// Step 6: 성격 테스트
+/// Step 7: 헬스 데이터 권한
 class EnhancedProfileSetupScreen extends StatefulWidget {
   const EnhancedProfileSetupScreen({super.key});
 
@@ -26,7 +28,7 @@ class _EnhancedProfileSetupScreenState
     extends State<EnhancedProfileSetupScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
-  final int _totalSteps = 6;
+  final int _totalSteps = 7;
 
   // Step 1: 기본 정보
   final _nameController = TextEditingController();
@@ -117,7 +119,7 @@ class _EnhancedProfileSetupScreenState
 
     // BodyComposition 저장
     profile.setBodyComposition(bodyComposition);
-    
+
     // 식사 패턴 저장
     if (_mealPattern != null) {
       profile.setMealPattern(_mealPattern!);
@@ -129,9 +131,9 @@ class _EnhancedProfileSetupScreenState
 
     // 홈 화면으로 이동
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     }
   }
 
@@ -154,7 +156,7 @@ class _EnhancedProfileSetupScreenState
             value: (_currentStep + 1) / _totalSteps,
             backgroundColor: Colors.grey[200],
           ),
-          
+
           // 페이지 내용
           Expanded(
             child: PageView(
@@ -167,6 +169,7 @@ class _EnhancedProfileSetupScreenState
                 _buildStep4BodyShapeSelection(),
                 _buildStep5DetailedInfo(),
                 _buildStep6PersonalityTest(),
+                _buildStep7HealthPermission(),
               ],
             ),
           ),
@@ -216,6 +219,8 @@ class _EnhancedProfileSetupScreenState
         return true;
       case 5: // 성격 테스트
         return true;
+      case 6: // 헬스 데이터 권한
+        return true; // 권한은 선택사항
       default:
         return false;
     }
@@ -230,9 +235,9 @@ class _EnhancedProfileSetupScreenState
         children: [
           Text(
             '기본 정보',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -256,8 +261,16 @@ class _EnhancedProfileSetupScreenState
           const SizedBox(height: 12),
           SegmentedButton<String>(
             segments: const [
-              ButtonSegment(value: 'female', label: Text('여성'), icon: Icon(Icons.female)),
-              ButtonSegment(value: 'male', label: Text('남성'), icon: Icon(Icons.male)),
+              ButtonSegment(
+                value: 'female',
+                label: Text('여성'),
+                icon: Icon(Icons.female),
+              ),
+              ButtonSegment(
+                value: 'male',
+                label: Text('남성'),
+                icon: Icon(Icons.male),
+              ),
             ],
             selected: {_gender},
             onSelectionChanged: (Set<String> selected) {
@@ -285,8 +298,10 @@ class _EnhancedProfileSetupScreenState
           const SizedBox(height: 24),
 
           // 키
-          Text('키: ${_height.toInt()}cm',
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            '키: ${_height.toInt()}cm',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Slider(
             value: _height,
             min: 130,
@@ -302,8 +317,10 @@ class _EnhancedProfileSetupScreenState
           const SizedBox(height: 24),
 
           // 체중
-          Text('체중: ${_weight.toInt()}kg',
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            '체중: ${_weight.toInt()}kg',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Slider(
             value: _weight,
             min: 30,
@@ -323,16 +340,19 @@ class _EnhancedProfileSetupScreenState
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _activityLevel,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
             items: const [
               DropdownMenuItem(value: 'sedentary', child: Text('거의 운동 안 함')),
               DropdownMenuItem(value: 'light', child: Text('가벼운 운동 (주 1-3일)')),
-              DropdownMenuItem(value: 'moderate', child: Text('보통 운동 (주 3-5일)')),
+              DropdownMenuItem(
+                value: 'moderate',
+                child: Text('보통 운동 (주 3-5일)'),
+              ),
               DropdownMenuItem(value: 'active', child: Text('적극적 운동 (주 6-7일)')),
               DropdownMenuItem(
-                  value: 'very_active', child: Text('매우 적극적 (하루 2회 이상)')),
+                value: 'very_active',
+                child: Text('매우 적극적 (하루 2회 이상)'),
+              ),
             ],
             onChanged: (value) {
               if (value != null) {
@@ -356,9 +376,9 @@ class _EnhancedProfileSetupScreenState
         children: [
           Text(
             '식사 패턴 설정',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -366,7 +386,7 @@ class _EnhancedProfileSetupScreenState
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
-          
+
           // 프리셋 버튼들
           Wrap(
             spacing: 8,
@@ -377,13 +397,10 @@ class _EnhancedProfileSetupScreenState
               _buildMealPresetChip('4식+', 4),
             ],
           ),
-          
+
           if (_mealPattern != null) ...[
             const SizedBox(height: 24),
-            Text(
-              '설정된 식사 시간',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('설정된 식사 시간', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             ..._buildMealTimesList(),
           ],
@@ -391,11 +408,12 @@ class _EnhancedProfileSetupScreenState
       ),
     );
   }
-  
+
   Widget _buildMealPresetChip(String label, int mealCount) {
-    final isSelected = _mealPattern != null && 
+    final isSelected =
+        _mealPattern != null &&
         (_mealPattern!['mealsPerDay'] as int?) == mealCount;
-    
+
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
@@ -408,10 +426,10 @@ class _EnhancedProfileSetupScreenState
       },
     );
   }
-  
+
   void _applyMealPreset(int mealCount) {
     List<Map<String, dynamic>> meals;
-    
+
     switch (mealCount) {
       case 2:
         meals = [
@@ -437,28 +455,28 @@ class _EnhancedProfileSetupScreenState
       default:
         meals = [];
     }
-    
-    _mealPattern = {
-      'mealsPerDay': mealCount,
-      'meals': meals,
-      'snacks': [],
-    };
+
+    _mealPattern = {'mealsPerDay': mealCount, 'meals': meals, 'snacks': []};
   }
-  
+
   List<Widget> _buildMealTimesList() {
     final meals = _mealPattern!['meals'] as List;
     return meals.map((meal) {
       final name = meal['name'] as String;
       final hour = meal['hour'] as int;
       final minute = meal['minute'] as int;
-      final timeString = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-      
+      final timeString =
+          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
       return Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           leading: const Icon(Icons.restaurant),
           title: Text(name),
-          trailing: Text(timeString, style: Theme.of(context).textTheme.titleMedium),
+          trailing: Text(
+            timeString,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
       );
     }).toList();
@@ -473,9 +491,9 @@ class _EnhancedProfileSetupScreenState
         children: [
           Text(
             '체질 선택',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -519,12 +537,8 @@ class _EnhancedProfileSetupScreenState
                             children: [
                               Text(
                                 type.displayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -543,7 +557,7 @@ class _EnhancedProfileSetupScreenState
           }),
 
           const SizedBox(height: 16),
-                    OutlinedButton.icon(
+          OutlinedButton.icon(
             onPressed: () {
               setState(() {
                 _selectedSomatotype = Somatotype.mixed;
@@ -566,9 +580,9 @@ class _EnhancedProfileSetupScreenState
         children: [
           Text(
             '체형 선택',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -613,12 +627,8 @@ class _EnhancedProfileSetupScreenState
                             children: [
                               Text(
                                 shape.displayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -649,9 +659,9 @@ class _EnhancedProfileSetupScreenState
         children: [
           Text(
             '상세 정보',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -665,10 +675,10 @@ class _EnhancedProfileSetupScreenState
           const SizedBox(height: 12),
           SegmentedButton<MuscleType>(
             segments: MuscleType.values
-                .map((type) => ButtonSegment(
-                      value: type,
-                      label: Text(type.displayName),
-                    ))
+                .map(
+                  (type) =>
+                      ButtonSegment(value: type, label: Text(type.displayName)),
+                )
                 .toList(),
             selected: {_muscleType},
             onSelectionChanged: (Set<MuscleType> selected) {
@@ -710,9 +720,9 @@ class _EnhancedProfileSetupScreenState
         children: [
           Text(
             '간단한 성격 테스트',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -793,6 +803,205 @@ class _EnhancedProfileSetupScreenState
             ),
             const Text('그렇다'),
           ],
+        ),
+      ],
+    );
+  }
+
+  // ===== Step 7: 헬스 데이터 권한 =====
+  Widget _buildStep7HealthPermission() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '헬스 데이터 권한',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '웨어러블 기기와의 자동 동기화를 위해 건강 데이터 접근 권한이 필요합니다.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 32),
+
+          // 권한 설명 카드
+          Card(
+            color: Colors.blue.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.health_and_safety,
+                        color: Colors.blue.shade700,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '권한 허용 시 제공되는 기능',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPermissionFeature(
+                    '걸음 수 자동 동기화',
+                    '매일 걸음 수를 자동으로 가져와 칼로리 계산에 반영합니다.',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPermissionFeature(
+                    '칼로리 소모량 추적',
+                    '운동 및 일상 활동으로 소모된 칼로리를 정확히 계산합니다.',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPermissionFeature(
+                    '운동 기록 자동 저장',
+                    '웨어러블 기기의 운동 데이터를 앱에 자동으로 저장합니다.',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPermissionFeature(
+                    '개인 맞춤 추천',
+                    '더 정확한 데이터를 기반으로 식단과 운동을 추천합니다.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // 선택 옵션
+          Text('권한 선택', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 16),
+
+          // 권한 허용 버튼
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final healthService = HealthDataService();
+                final permissionGranted = await healthService
+                    .requestPermissions();
+
+                if (permissionGranted && mounted) {
+                  // 권한 얻었으면 동기화 시도
+                  final appProvider = Provider.of<AppProvider>(
+                    context,
+                    listen: false,
+                  );
+                  await appProvider.syncHealthData();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('헬스 데이터 권한이 허용되었습니다')),
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('헬스 데이터 권한이 거부되었습니다'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.check_circle),
+              label: const Text('권한 허용하고 자동 동기화 사용'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 나중에 설정 버튼
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                // 권한 없이 진행
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('설정 > 헬스 데이터 권한에서 언제든 권한을 허용할 수 있습니다'),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.settings),
+              label: const Text('나중에 설정하기'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // 안내 텍스트
+          Card(
+            color: Colors.grey.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.grey),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '권한을 허용하지 않아도 앱의 기본 기능은 사용할 수 있습니다. 웨어러블 데이터 동기화만 제한됩니다.',
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionFeature(String title, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 13,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
