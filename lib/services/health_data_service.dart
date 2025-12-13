@@ -54,27 +54,65 @@ class HealthDataService {
       }
 
       // 권한 요청 (최대 2회 재시도)
-      bool requested = false;
+      bool permissionGranted = false;
       int retryCount = 0;
       const maxRetries = 2;
 
-      while (!requested && retryCount < maxRetries) {
+      while (!permissionGranted && retryCount < maxRetries) {
         try {
           developer.log('🔄 권한 요청 시도 ${retryCount + 1}/$maxRetries');
 
-          requested = await _healthPlugin.requestAuthorization(
+          final requestResult = await _healthPlugin.requestAuthorization(
             types,
             permissions: permissions,
           );
 
-          if (requested) {
-            developer.log('✅ 헬스 데이터 권한 허용됨');
+          developer.log('🔍 requestAuthorization 결과: $requestResult');
+
+          // 권한 요청 후 잠시 대기 (시스템 반영 시간)
+          await Future.delayed(const Duration(seconds: 2));
+
+          // 실제 권한 상태 확인 (여러 번 시도)
+          bool actualPermission = false;
+          for (int checkAttempt = 0; checkAttempt < 3; checkAttempt++) {
+            final checkResult = await _healthPlugin.hasPermissions(
+              types,
+              permissions: permissions,
+            );
+            developer.log('🔍 권한 확인 시도 ${checkAttempt + 1}: $checkResult');
+
+            if (checkResult == true) {
+              actualPermission = true;
+              break;
+            }
+
+            // 확인 실패 시 잠시 대기 후 재시도
+            if (checkAttempt < 2) {
+              await Future.delayed(const Duration(seconds: 1));
+            }
+          }
+
+          // 실제 데이터 접근 테스트 (최종 검증)
+          if (actualPermission) {
+            try {
+              developer.log('🔍 실제 데이터 접근 테스트 시작');
+              await getTodaySteps(); // 간단한 데이터 조회로 권한 검증
+              permissionGranted = true;
+              developer.log('✅ 헬스 데이터 권한 검증 성공');
+            } catch (e) {
+              developer.log('⚠️ 권한은 허용되었지만 데이터 접근 실패: $e');
+              permissionGranted = false;
+            }
+          }
+
+          if (permissionGranted) {
+            developer.log('✅ 헬스 데이터 권한 최종 승인됨');
             break;
           } else {
-            developer.log('❌ 권한 요청 거부됨 (시도 ${retryCount + 1})');
+            developer.log('❌ 권한 요청 실패 또는 검증 실패 (시도 ${retryCount + 1})');
             retryCount++;
 
-            // 재시도 전 잠시 대기
+            // 재시도 전 대기
             if (retryCount < maxRetries) {
               await Future.delayed(const Duration(seconds: 1));
             }
@@ -85,21 +123,14 @@ class HealthDataService {
         }
       }
 
-      // 최종 결과 확인
-      final finalPermission = await _healthPlugin.hasPermissions(
-        types,
-        permissions: permissions,
-      );
-      developer.log('🔍 최종 권한 상태: $finalPermission');
-
-      if (!requested) {
+      if (!permissionGranted) {
         developer.log('❌ 헬스 데이터 권한 획득 실패 - 수동 설정 필요');
         developer.log('💡 권한 설정 방법:');
         developer.log('   Android: 설정 > 앱 > [앱이름] > 권한 > 건강 데이터 허용');
         developer.log('   iOS: 설정 > 건강 > 데이터 액세스 및 기기 > [앱이름]');
       }
 
-      return requested;
+      return permissionGranted;
     } catch (e, stackTrace) {
       developer.log('❌ 권한 요청 실패: $e');
       developer.log('❌ 스택 트레이스: $stackTrace');

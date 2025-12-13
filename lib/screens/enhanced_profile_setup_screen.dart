@@ -55,6 +55,9 @@ class _EnhancedProfileSetupScreenState
   double _conscientiousness = 50.0;
   double _neuroticism = 50.0;
 
+  // Step 7: 헬스 데이터 권한
+  bool _isRequestingPermission = false;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -889,39 +892,74 @@ class _EnhancedProfileSetupScreenState
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () async {
-                final healthService = HealthDataService();
-                final permissionGranted = await healthService
-                    .requestPermissions();
+              onPressed: _isRequestingPermission
+                  ? null
+                  : () async {
+                      setState(() => _isRequestingPermission = true);
 
-                if (permissionGranted && mounted) {
-                  // 권한 얻었으면 동기화 시도
-                  final appProvider = Provider.of<AppProvider>(
-                    context,
-                    listen: false,
-                  );
-                  await appProvider.syncHealthData();
+                      try {
+                        final healthService = HealthDataService();
+                        final permissionGranted = await healthService
+                            .requestPermissions();
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('헬스 데이터 권한이 허용되었습니다')),
-                  );
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('헬스 데이터 권한이 거부되었습니다'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.check_circle),
-              label: const Text('권한 허용하고 자동 동기화 사용'),
+                        if (permissionGranted && mounted) {
+                          // 권한 얻었으면 동기화 시도
+                          final appProvider = Provider.of<AppProvider>(
+                            context,
+                            listen: false,
+                          );
+                          await appProvider.syncHealthData();
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('헬스 데이터 권한이 허용되었습니다'),
+                              ),
+                            );
+                          }
+                        } else if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '헬스 데이터 권한이 거부되었습니다. 설정에서 수동으로 허용해주세요',
+                              ),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('권한 요청 중 오류가 발생했습니다: $e'),
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isRequestingPermission = false);
+                        }
+                      }
+                    },
+              icon: _isRequestingPermission
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.check_circle),
+              label: _isRequestingPermission
+                  ? const Text('권한 요청 중...')
+                  : const Text('권한 허용하고 자동 동기화 사용'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
               ),
             ),
           ),
-
           const SizedBox(height: 12),
 
           // 나중에 설정 버튼
