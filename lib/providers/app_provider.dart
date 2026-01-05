@@ -27,7 +27,8 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
   // 칼로리 관리 (개선된 구조)
   double _intakeCalories = 0.0; // 섭취 칼로리 (식사)
-  double _exerciseBurnedCalories = 0.0; // 운동 소모 칼로리
+  double _exerciseBurnedCalories = 0.0; // 운동 소모 칼로리 (기록된 운동)
+  double _activityCalories = 0.0; // 움직임 칼로리 소비 (실시간 웨어러블 데이터)
   int _exerciseTotalMinutes = 0; // 오늘 총 운동 시간(분)
 
   // 목표 설정 (신체 데이터 기반 동적 계산)
@@ -42,6 +43,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   DateTime _lastCheckedDate = DateTime.now();
   Timer? _midnightTimer; // 자정 체크용 타이머
   Timer? _tdeeUpdateTimer; // TDEE 갱신용 타이머 (1분마다)
+  Timer? _activityCaloriesTimer; // 움직임 칼로리 실시간 업데이트 타이머 (5분마다)
 
   // 알림 Hysteresis (과식 경고)
   DateTime? _lastOverLimitNotificationTime;
@@ -50,11 +52,58 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   static const String _keyCurrentCalories = 'calorie_current_value';
   static const String _keyCalorieMode = 'calorie_mode';
   static const String _keyGoalCalories = 'goal_calories';
+  static const String _keyLocale = 'app_locale'; // 언어 설정 키
+  static const String _keyLanguageSet = 'is_language_set'; // 첫 실행 언어 설정 여부
 
   // 아바타 상태
   AvatarAnimationType _currentAnimationType = AvatarAnimationType.idle;
   FaceExpressionType _currentExpression = FaceExpressionType.neutral;
   BodyPose _currentPose = BodyPose.neutral;
+
+  // 새로운 데이터 요소를 위해 추가
+  double _manualExerciseBurnedCalories = 0.0; // 수동으로 입력된 운동 소모 칼로리
+
+  // 언어 설정
+  Locale _locale = const Locale('ko'); // 기본값 한국어
+  bool _isLanguageSet = false; // 언어 설정 완료 여부 (첫 실행 판단)
+
+  // 타임존 설정
+  String _timezoneName = 'Asia/Seoul'; // 기본 타임존
+
+  // 타임존 Getters/Setters
+  String get timezoneName => _timezoneName;
+  List<String> get availableTimezones =>
+      NotificationService().getAvailableTimezones();
+  String get currentTimezoneName =>
+      NotificationService().getCurrentTimezoneName();
+
+  /// 타임존 설정 (동적)
+  Future<void> setTimezone(String timezoneName) async {
+    try {
+      // 타임존이 유효한지 검증
+      final availableTimezones = NotificationService().getAvailableTimezones();
+      if (!availableTimezones.contains(timezoneName)) {
+        developer.log('⚠️ 유효하지 않은 타임존: $timezoneName, 기본값 사용');
+        timezoneName = 'Asia/Seoul';
+      }
+
+      _timezoneName = timezoneName;
+
+      // NotificationService에 타임존 설정 적용
+      await NotificationService().setTimezone(timezoneName);
+
+      // SharedPreferences에 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('app_timezone', timezoneName);
+
+      developer.log('✅ 앱 타임존 설정: $timezoneName');
+      notifyListeners();
+    } catch (e) {
+      developer.log('❌ 타임존 설정 실패: $e');
+      // 실패 시 기본 타임존으로 복귀
+      _timezoneName = 'Asia/Seoul';
+    }
+  }
 
   // 자동 표정 로테이션
   Timer? _expressionTimer;
@@ -65,10 +114,28 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
   // Getters
   UserProfile? get userProfile => _userProfile;
+  Locale get locale => _locale;
+  bool get isLanguageSet => _isLanguageSet;
 
   // 기본 칼로리 값 (기존 호환성)
   double get currentCalories => _intakeCalories; // 섭취
-  double get currentBurnedCalories => _exerciseBurnedCalories; // 운동
+
+  /// 운동 소모 칼로리 표시용 (통합 계산)
+  double get currentBurnedCalories {
+    // 1. Health Connect 실시간 활동량 우선 (가장 정확함)
+    if (_activityCalories > 0) {
+      return _activityCalories;
+    }
+
+    // 2. 수동 기록된 운동 칼로리 (Health Connect 미사용 시)
+    if (_manualExerciseBurnedCalories > 0) {
+      return _manualExerciseBurnedCalories;
+    }
+
+    // 3. 전체 운동 기록 합산 (fallback)
+    return _exerciseBurnedCalories;
+  }
+
   double get dailyCalorieGoal => _goalCalories; // 목표
 
   // 새로운 칼로리 계산
@@ -90,20 +157,13 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
         );
 
     // 2. 운동 시간 중복 제거
-    // 운동 중에는 '운동 칼로리'가 적용되므로, 해당 시간만큼의 '일반 TDEE 소모'는 차감해야 함
+    // 운동 중에는 '활동 칼로리'가 적용되므로, 해당 시간만큼의 '일반 TDEE 소모'는 차감해야 함
+    // (Health Connect 데이터는 BMR이 포함되지 않은 Active Calories임을 가정)
     if (_exerciseTotalMinutes > 0) {
-      // 깨어있는 시간 기준 분당 소모율 추정 (단순화)
-      // (하루 TDEE - 수면BMR) / 깨어있는 시간... 은 복잡하므로
-      // 현재 시점의 '비수면 분당 소모율'을 사용하거나, 평균치를 사용.
-      // 여기서는 EnhancedMetabolismCalculator 내부 로직과 유사하게 추정.
-
-      final double dailyBMR = EnhancedMetabolismCalculator.calculateEnhancedBMR(
-        _userProfile!,
-      );
       final double dailyTDEE =
           EnhancedMetabolismCalculator.calculateEnhancedTDEE(_userProfile!);
 
-      // 대략적인 분당 활동 대사량 (깨어있는 시간 16시간 가정)
+      // 비수면 시간 기준 분당 활동 대사량 추정
       final double avgBurnPerMinute = dailyTDEE / 1440.0;
 
       // 운동 시간만큼 차감 (단, 0보다 작아지지 않게)
@@ -113,9 +173,17 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     return max(0.0, accumulatedTDEE);
   }
 
-  /// 총 소모 칼로리 (운동 + TDEE)
-  double get totalBurnedCalories =>
-      _exerciseBurnedCalories + tdeeBurnedCalories;
+  /// 총 소모 칼로리 (Health Connect 최신 활동량 + 수동 기록 + TDEE)
+  /// _activityCalories는 Health Connect에서 가져온 오늘 총 활동 소모량임
+  /// _exerciseBurnedCalories는 수동 + 자동 세션 소모량임 (중복 주의)
+  double get totalBurnedCalories {
+    // Health Connect 활동량(_activityCalories)은 이미 우리가 동기화한 세션 칼로리를 포함하고 있음.
+    // 따라서 '수동 입력'된 칼로리만 별도로 합산해주어야 함.
+    // _intakeCalories - totalBurnedCalories 로 계산되므로, totalBurnedCalories 가 높을수록 순칼로리가 낮아짐.
+    return _activityCalories +
+        _manualExerciseBurnedCalories +
+        tdeeBurnedCalories;
+  }
 
   /// 잔여 칼로리 (더 먹을 수 있는 양)
   /// = 목표 - 섭취 + (운동 + TDEE 소모)
@@ -151,6 +219,28 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   bool _isSleepMode = false;
   bool get isSleepMode => _isSleepMode;
 
+  // 웨어러블 연결 상태
+  bool _isWearableConnected = false;
+  String? _connectedPlatformName; // "Health Connect" 또는 "HealthKit"
+  bool _hasHealthPermission = false;
+  DateTime? _lastHealthSyncTime;
+
+  // 현재 진행 중인 운동 정보
+  String? _currentActivityName; // "달리기", "걷기" 등
+  int? _currentActivityMinutes; // 경과 시간 (분)
+  double? _currentActivityCalories; // 소모 칼로리
+  double? _currentActivityDistance; // 거리 (km)
+
+  // 웨어러블 상태 Getters
+  bool get isWearableConnected => _isWearableConnected;
+  String? get connectedPlatformName => _connectedPlatformName;
+  bool get hasHealthPermission => _hasHealthPermission;
+  DateTime? get lastHealthSyncTime => _lastHealthSyncTime;
+  String? get currentActivityName => _currentActivityName;
+  int? get currentActivityMinutes => _currentActivityMinutes;
+  double? get currentActivityCalories => _currentActivityCalories;
+  double? get currentActivityDistance => _currentActivityDistance;
+
   // 초기화
   Future<void> initialize() async {
     _isLoading = true;
@@ -161,17 +251,52 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     _lastCheckedDate = DateTime.now();
 
     try {
+      await _loadLocaleSettings(); // 언어 설정 로드
+      await _loadTimezoneSettings(); // 타임존 설정 로드
       await NotificationService().initialize();
-      await Hive.initFlutter();
+      // Hive 초기화 보장 (중복 초기화 방지)
+      if (!Hive.isBoxOpen('userProfile')) {
+        await Hive.openBox<UserProfile>('userProfile');
+        developer.log('📦 Hive userProfile 박스 초기화 완료');
+      }
+      var box = Hive.box<UserProfile>('userProfile');
 
-      if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(UserProfileAdapter());
+      // 1. 프로필 로드 우선 (마이그레이션이 데이터를 건드리기 전에 원본 확보)
+      _userProfile = box.get('profile');
+      developer.log('📖 Hive에서 프로필 로드: ${_userProfile != null ? '성공' : '없음'}');
+
+      // 2. 데이터가 있으면 마이그레이션 실행 (필드 업데이트 등)
+      if (_userProfile != null) {
+        try {
+          await DataMigrationService.migrateUserProfiles(box);
+          // 마이그레이션 후 갱신된 데이터 다시 로드
+          _userProfile = box.get('profile');
+          developer.log('🔄 프로필 마이그레이션 완료');
+        } catch (e) {
+          developer.log('⚠️ 마이그레이션 중 오류 발생 (데이터는 유지됨): $e');
+        }
       }
 
-      var box = await Hive.openBox<UserProfile>('userProfile');
-      await DataMigrationService.migrateUserProfiles(box);
+      // 3. Hive에 데이터가 없으면 SharedPreferences 백업 확인 (복구 시도)
+      if (_userProfile == null) {
+        developer.log('⚠️ Hive에서 프로필을 찾을 수 없습니다. SharedPreferences 백업 확인 중...');
+        final backupProfile = await _loadUserProfileFromPrefs();
+        if (backupProfile != null) {
+          _userProfile = backupProfile;
+          await box.put('profile', _userProfile!); // 복구된 데이터 Hive에 재저장
+          developer.log('✅ SharedPreferences에서 프로필 복구 성공!');
 
-      _userProfile = box.get('profile');
+          // 복구된 데이터 검증
+          final verifyProfile = box.get('profile');
+          if (verifyProfile != null) {
+            developer.log('✅ Hive에 복구된 프로필 저장 검증 성공');
+          } else {
+            developer.log('❌ Hive에 복구된 프로필 저장 실패');
+          }
+        } else {
+          developer.log('ℹ️ 복구할 백업 데이터가 없습니다.');
+        }
+      }
 
       if (_userProfile != null) {
         // TDEE 계산
@@ -201,6 +326,9 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // 헬스 데이터 동기화
       syncHealthData();
+
+      // 웨어러블 상태 확인
+      checkWearableStatus();
 
       // 백그라운드 서비스 초기화
       await _initializeBackgroundService();
@@ -261,6 +389,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     _expressionTimer?.cancel();
     _midnightTimer?.cancel();
     _tdeeUpdateTimer?.cancel();
+    _activityCaloriesTimer?.cancel();
     super.dispose();
   }
 
@@ -271,8 +400,9 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     } else if (state == AppLifecycleState.resumed) {
       _checkDateChange();
 
-      // 데이터 새로고침
+      // 데이터 새로고침 및 자동 동기화
       _loadTodayCalories();
+      syncHealthData(); // 앱 복귀 시 자동 동기화 트리거
       notifyListeners();
     }
   }
@@ -291,6 +421,99 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       // 날짜가 바뀌면 데이터 리로드 (새로운 날의 데이터는 0부터 시작)
       await _loadTodayCalories();
       notifyListeners();
+    }
+  }
+
+  // 언어 설정 로드
+  Future<void> _loadLocaleSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isLanguageSet = prefs.getBool(_keyLanguageSet) ?? false;
+      final String? languageCode = prefs.getString(_keyLocale);
+
+      developer.log('🌐 언어 설정 로드 시작');
+      developer.log('   _keyLanguageSet 값: $_isLanguageSet');
+      developer.log('   _keyLocale 값: $languageCode');
+
+      if (languageCode != null) {
+        _locale = Locale(languageCode);
+        developer.log('✅ 언어 설정 로드 성공: ${_locale.languageCode}');
+      } else {
+        developer.log('⚠️ 저장된 언어 코드 없음');
+      }
+
+      // 첫 실행 감지: 언어 설정이 없으면 한국어 기본값 사용하되 첫 실행으로 처리
+      if (!_isLanguageSet) {
+        developer.log('🚩 첫 실행 감지: 언어 설정이 완료되지 않음');
+        _locale = const Locale('ko'); // 기본값 한국어
+        // 하지만 _isLanguageSet은 false로 유지해서 언어 선택 화면 표시
+      }
+
+      developer.log(
+        '🌐 최종 언어 상태: locale=${_locale.languageCode}, isSet=$_isLanguageSet',
+      );
+    } catch (e) {
+      developer.log('❌ 언어 설정 로드 실패: $e');
+      // 오류 시 기본값 사용
+      _locale = const Locale('ko');
+      _isLanguageSet = false;
+    }
+  }
+
+  // 타임존 설정 로드
+  Future<void> _loadTimezoneSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? savedTimezone = prefs.getString('app_timezone');
+
+      if (savedTimezone != null) {
+        _timezoneName = savedTimezone;
+        // NotificationService에 타임존 설정 적용
+        await NotificationService().setTimezone(savedTimezone);
+        developer.log('🕐 타임존 설정 로드: $savedTimezone');
+      } else {
+        // 기본 타임존 설정 (기기 로케일 기반)
+        final deviceTimezone = DateTime.now().timeZoneName;
+        _timezoneName = deviceTimezone;
+        await setTimezone(deviceTimezone);
+        developer.log('🕐 기본 타임존 설정: $deviceTimezone');
+      }
+    } catch (e) {
+      developer.log('❌ 타임존 설정 로드 실패: $e');
+      // 실패 시 기본 타임존 사용
+      _timezoneName = 'Asia/Seoul';
+    }
+  }
+
+  // 언어 설정 변경
+  Future<void> setLocale(Locale newLocale) async {
+    developer.log('🌐 setLocale 호출: ${newLocale.languageCode}');
+
+    if (_locale == newLocale && _isLanguageSet) {
+      developer.log('🌐 이미 설정된 언어이므로 건너뜀');
+      return;
+    }
+
+    _locale = newLocale;
+    _isLanguageSet = true;
+    NotificationLocalizations.setLanguageCode(newLocale.languageCode);
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyLocale, newLocale.languageCode);
+      await prefs.setBool(_keyLanguageSet, true);
+
+      // 저장 검증
+      final savedLocale = prefs.getString(_keyLocale);
+      final savedIsSet = prefs.getBool(_keyLanguageSet);
+
+      developer.log('✅ 언어 설정 저장 완료: locale=$savedLocale, isSet=$savedIsSet');
+      developer.log('🌐 언어 변경 성공: ${newLocale.languageCode}');
+    } catch (e) {
+      developer.log('❌ 언어 설정 저장 실패: $e');
+      // 저장 실패 시 플래그 되돌리기
+      _isLanguageSet = false;
     }
   }
 
@@ -327,6 +550,46 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       // 값은 getter에서 계산되므로 알림만 보내면 됨
       notifyListeners();
     });
+
+    // 움직임 칼로리 실시간 업데이트 타이머 시작 (5분마다)
+    _startActivityCaloriesTimer();
+  }
+
+  // 움직임 칼로리 실시간 업데이트 타이머 시작
+  void _startActivityCaloriesTimer() {
+    _activityCaloriesTimer?.cancel();
+
+    // 5분마다 움직임 칼로리 소비량 업데이트
+    _activityCaloriesTimer = Timer.periodic(const Duration(minutes: 5), (
+      _,
+    ) async {
+      await _updateRealtimeActivityCalories();
+    });
+  }
+
+  // 실시간 움직임 칼로리 소비량 업데이트
+  Future<void> _updateRealtimeActivityCalories() async {
+    try {
+      if (!hasHealthPermission) {
+        developer.log('ℹ️ 헬스 권한 없음 - 움직임 칼로리 업데이트 건너뜀');
+        return;
+      }
+
+      final healthService = HealthDataService();
+      final realtimeCalories = await healthService
+          .getRealtimeActivityCalories();
+
+      // 움직임 칼로리 소비량 업데이트
+      if (_activityCalories != realtimeCalories) {
+        _activityCalories = realtimeCalories;
+        developer.log('🏃 움직임 칼로리 소비 업데이트: ${realtimeCalories.toInt()} kcal');
+
+        // UI 실시간 업데이트
+        notifyListeners();
+      }
+    } catch (e) {
+      developer.log('❌ 실시간 움직임 칼로리 업데이트 실패: $e');
+    }
   }
 
   // 의상 색상 업데이트
@@ -370,8 +633,29 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
 
     try {
-      var box = await Hive.openBox<UserProfile>('userProfile');
-      await box.put('profile', profile);
+      // Hive 박스 초기화 보장 (더욱 견고하게)
+      Box<UserProfile> box;
+      if (!Hive.isBoxOpen('userProfile')) {
+        try {
+          box = await Hive.openBox<UserProfile>('userProfile');
+          developer.log('✅ Hive userProfile 박스 새로 초기화');
+        } catch (e) {
+          developer.log('❌ Hive 박스 초기화 실패: $e');
+          throw Exception('데이터베이스 초기화 실패: $e');
+        }
+      } else {
+        box = Hive.box<UserProfile>('userProfile');
+      }
+
+      // 프로필 저장 시도 (더욱 안전하게)
+      try {
+        await box.put('profile', profile);
+        developer.log('✅ 프로필 Hive 저장 성공');
+      } catch (e) {
+        developer.log('❌ 프로필 Hive 저장 실패: $e');
+        throw Exception('프로필 저장 실패: $e');
+      }
+
       _userProfile = profile;
 
       // TDEE 계산 및 저장
@@ -379,14 +663,26 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       _goalCalories = _tdeeCalories; // 기본값은 TDEE로 설정
 
       // SharedPreferences에 프로필 데이터 저장 (백그라운드 작업용)
-      await _saveUserProfileToPrefs(profile);
+      try {
+        await _saveUserProfileToPrefs(profile);
+        developer.log('✅ SharedPreferences에 프로필 백업 완료');
+      } catch (e) {
+        developer.log('⚠️ 프로필 백업 실패 (Hive 저장은 성공함): $e');
+        // 백업 실패는 치명적이지 않으므로 무시하고 진행
+      }
+
+      // 칼로리 데이터도 함께 저장
+      await _saveCalorieDataToPrefs();
+      developer.log('✅ 칼로리 데이터 저장 완료');
 
       _errorMessage = null;
+      developer.log('🎉 프로필 저장 작업 전체 완료');
     } catch (e) {
       _errorMessage = '프로필 저장 오류: $e';
+      developer.log('❌ 프로필 저장 실패: $e');
+      throw e; // 상위로 예외 전파
     } finally {
       _isLoading = false;
-      _saveCalorieDataToPrefs(); // 저장
       notifyListeners();
     }
   }
@@ -396,26 +692,42 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
     try {
       String today = DateTime.now().toIso8601String().split('T')[0];
 
-      // 섭취 및 운동 칼로리
+      // 섭취 칼로리
       _intakeCalories = await DatabaseService().getTotalCaloriesForDate(today);
+
+      // 운동 전체 소모 칼로리 (수동 + 자동 합산)
       _exerciseBurnedCalories = await DatabaseService()
           .getTotalBurnedCaloriesForDate(today);
 
-      // 오늘 총 운동 시간 계산
-      final exerciseRecords = await DatabaseService().getExerciseRecordsForDate(
+      // 수동 입력 운동 칼로리만 별도 조회 (중복 합산 방지용)
+      final allRecords = await DatabaseService().getExerciseRecordsForDate(
         today,
       );
-      _exerciseTotalMinutes = exerciseRecords.fold<int>(
+      _manualExerciseBurnedCalories = allRecords
+          .where(
+            (r) =>
+                (r['source'] ?? 'manual').toString().toLowerCase() == 'manual',
+          )
+          .fold<double>(
+            0.0,
+            (sum, r) => sum + (r['calories_burned'] as num? ?? 0).toDouble(),
+          );
+
+      // 오늘 총 운동 시간 계산 (TDEE 차감용)
+      _exerciseTotalMinutes = allRecords.fold<int>(
         0,
         (sum, record) => sum + (record['duration_minutes'] as int? ?? 0),
       );
 
       developer.log(
-        '📊 칼로리 로드: 섭취 ${_intakeCalories.toInt()}, 운동 ${_exerciseBurnedCalories.toInt()}, 운동시간 $_exerciseTotalMinutes분',
+        '📊 칼로리 로드: 섭취 ${_intakeCalories.toInt()}, 수동운동 ${_manualExerciseBurnedCalories.toInt()}, 전체운동 ${_exerciseBurnedCalories.toInt()}, 운동시간 $_exerciseTotalMinutes분',
       );
 
       // 🎭 칼로리 로드 후 아바타 상태 업데이트
       _updateAvatarByCalorieStatus();
+
+      // 실시간 활동 칼로리 즉시 로드 (Health Connect)
+      await _updateRealtimeActivityCalories();
 
       _saveCalorieDataToPrefs(); // 로드 후 저장 (동기화)
     } catch (e) {
@@ -889,17 +1201,39 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   /// 사용자 프로필을 SharedPreferences에 저장
+  /// 사용자 프로필을 SharedPreferences에 저장 (JSON 전체 백업)
   Future<void> _saveUserProfileToPrefs(UserProfile profile) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final jsonString = jsonEncode(profile.toJson());
+      await prefs.setString('user_profile_backup', jsonString);
+
+      // 기존 개별 필드 저장 (호환성 유지)
       await prefs.setDouble('user_weight', profile.initialWeight);
       await prefs.setDouble('user_height', profile.height);
       await prefs.setInt('user_age', profile.age);
       await prefs.setString('user_gender', profile.gender);
       await prefs.setString('user_activity_level', profile.activityLevel);
+
+      developer.log('💾 SharedPreferences에 프로필 백업 완료 (JSON + 개별 필드)');
     } catch (e) {
-      developer.log('프로필 저장 오류: $e');
+      developer.log('❌ 프로필 저장 오류: $e');
     }
+  }
+
+  /// SharedPreferences에서 프로필 백업 로드 (복구용)
+  Future<UserProfile?> _loadUserProfileFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString('user_profile_backup');
+      if (jsonString != null) {
+        final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+        return UserProfile.fromJson(jsonMap);
+      }
+    } catch (e) {
+      developer.log('❌ SharedPreferences 프로필 로드 실패: $e');
+    }
+    return null;
   }
 
   // ========== Phase 4: 헬스 데이터 통합 ==========
@@ -954,51 +1288,261 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   /// 헬스 데이터 동기화
-  Future<void> syncHealthData() async {
+  Future<Map<String, dynamic>> syncHealthData() async {
     try {
       developer.log('🔄 헬스 데이터 동기화 시작...');
+      final healthService = HealthDataService();
+
+      // 1. 가용성 체크
+      final isAvailable = await healthService.isHealthConnectAvailable();
+      if (!isAvailable) {
+        developer.log('⚠️ 헬스 커넥트를 사용할 수 없는 환경입니다.');
+        _errorMessage =
+            '헬스 커넥트를 사용할 수 없는 환경입니다. Health Connect 앱이 설치되어 있는지 확인해주세요.';
+        _isWearableConnected = false;
+        notifyListeners();
+        return {'success': false, 'message': 'Health Connect를 사용할 수 없습니다.'};
+      }
+
+      // 2. 권한 확인
+      final hasPermission = await healthService.hasPermissions();
+      _hasHealthPermission = hasPermission;
+      if (!hasPermission) {
+        developer.log('ℹ️ 헬스 권한이 없어 동기화를 건너뜁니다.');
+        _errorMessage = '헬스 데이터 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+        _isWearableConnected = false;
+        notifyListeners();
+        return {'success': false, 'message': '권한이 필요합니다.'};
+      }
+
+      // 권한 상태 업데이트
+      _hasHealthPermission = true;
+      _isWearableConnected = true;
+      _connectedPlatformName = 'Health Connect';
+
+      // 3. 데이터베이스 동기화 (운동 세션들)
+      final syncedCount = await healthService.syncToDatabase().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          developer.log('⏰ 동기화 타임아웃 (30초)');
+          throw TimeoutException('동기화 시간이 초과되었습니다.');
+        },
+      );
+
+      // 4. 동기화 시간 업데이트
+      _lastHealthSyncTime = DateTime.now();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(
+        'last_health_sync_time',
+        _lastHealthSyncTime!.millisecondsSinceEpoch,
+      );
+
+      // 5. 오늘의 칼로리 데이터 새로고침
+      await _loadTodayCalories();
+
+      // 6. 실시간 움직임 칼로리 소비량 즉시 업데이트
+      await _updateRealtimeActivityCalories();
+
+      developer.log(
+        '✅ 헬스 데이터 동기화 완료: $syncedCount개 세션, 실시간=$_activityCalories',
+      );
+
+      if (_errorMessage?.contains('헬스 데이터') == true ||
+          _errorMessage?.contains('권한') == true) {
+        _errorMessage = null;
+      }
+
+      notifyListeners();
+      return {
+        'success': true,
+        'message': syncedCount > 0
+            ? '$syncedCount개의 운동 기록을 동기화했습니다.'
+            : '새로운 운동 기록이 없습니다.',
+        'syncedCount': syncedCount,
+        'activityCalories': _activityCalories,
+      };
+    } on TimeoutException catch (e) {
+      developer.log('⏰ 헬스 데이터 동기화 타임아웃: $e');
+      _errorMessage = '동기화 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.';
+      notifyListeners();
+      return {'success': false, 'message': '동기화 시간이 초과되었습니다.'};
+    } catch (e, stackTrace) {
+      developer.log('❌ 헬스 데이터 동기화 실패: $e');
+      developer.log('❌ 스택 트레이스: $stackTrace');
+      return {'success': false, 'message': '동기화 중 오류가 발생했습니다: $e'};
+    }
+  }
+
+  /// 웨어러블 연결 상태 확인 및 업데이트
+  Future<void> checkWearableStatus() async {
+    try {
+      developer.log('🔍 웨어러블 상태 확인 중...');
 
       final healthService = HealthDataService();
 
-      // 권한 확인 (권한이 없으면 동기화 시도하지 않음)
-      final hasPermission = await healthService.hasPermissions();
-      if (!hasPermission) {
-        developer.log('ℹ️ 헬스 데이터 권한 없음 (동기화 건너뜀)');
+      // 1. 권한 상태 확인
+      _hasHealthPermission = await healthService.hasPermissions();
+      developer.log('   권한 상태: $_hasHealthPermission');
 
-        // 권한 요청 시도
-        developer.log('🔄 헬스 데이터 권한 재요청 시도...');
-        final permissionGranted = await healthService.requestPermissions();
-
-        if (permissionGranted) {
-          developer.log('✅ 권한 재요청 성공, 동기화 재시도');
-          // 권한 얻었으면 동기화 진행
+      // 2. Health Connect 사용 가능 여부 확인 (Android)
+      try {
+        final isAvailable = await healthService.isHealthConnectAvailable();
+        if (isAvailable) {
+          _connectedPlatformName = 'Health Connect';
+          _isWearableConnected = true;
         } else {
-          developer.log('❌ 권한 재요청 실패');
-          // 권한 없는 경우 사용자에게 알림 (오류 메시지로 설정)
-          _errorMessage = '헬스 데이터 권한이 필요합니다. 설정에서 건강 데이터 접근을 허용해주세요.';
-          notifyListeners();
-          return;
+          // iOS인 경우
+          _connectedPlatformName = 'HealthKit';
+          _isWearableConnected = _hasHealthPermission;
         }
+      } catch (e) {
+        // 플랫폼 확인 실패 시 권한 상태로 연결 여부 판단
+        _isWearableConnected = _hasHealthPermission;
+        _connectedPlatformName = _hasHealthPermission ? 'HealthKit' : null;
       }
 
-      // 데이터 동기화
-      final syncedCount = await healthService.syncToDatabase();
+      // 3. 마지막 동기화 시간 로드
+      final prefs = await SharedPreferences.getInstance();
+      final lastSyncMs = prefs.getInt('last_health_sync_time');
+      if (lastSyncMs != null) {
+        _lastHealthSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSyncMs);
+      }
 
-      // 오늘의 칼로리 데이터 새로고침 (섭취 + 소모)
-      await _loadTodayCalories();
+      // 4. 현재 진행 중인 운동 확인 (오늘 가장 최근 운동)
+      await _checkCurrentActivity();
 
-      if (syncedCount > 0) {
-        developer.log('✅ 헬스 데이터 동기화 완료: $syncedCount개');
-        // 성공 시 오류 메시지 클리어
-        if (_errorMessage?.contains('헬스 데이터 권한') == true) {
-          _errorMessage = null;
+      developer.log(
+        '✅ 웨어러블 상태: 연결=$_isWearableConnected, 플랫폼=$_connectedPlatformName',
+      );
+      notifyListeners();
+    } catch (e) {
+      developer.log('❌ 웨어러블 상태 확인 실패: $e');
+    }
+  }
+
+  /// 현재 진행 중인 운동 확인
+  Future<void> _checkCurrentActivity() async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final records = await DatabaseService().getExerciseRecordsForDate(today);
+
+      if (records.isEmpty) {
+        _currentActivityName = null;
+        _currentActivityMinutes = null;
+        _currentActivityCalories = null;
+        _currentActivityDistance = null;
+        return;
+      }
+
+      // 가장 최근 운동 (마지막 30분 이내인 경우만 "진행 중"으로 표시)
+      final lastRecord = records.last;
+      final recordTime = DateTime.tryParse(lastRecord['time'] ?? '');
+
+      if (recordTime != null) {
+        final minutesSince = DateTime.now().difference(recordTime).inMinutes;
+
+        // 30분 이내 운동이면 "진행 중"으로 간주
+        if (minutesSince < 30) {
+          _currentActivityName = lastRecord['exercise_name'] as String?;
+          _currentActivityMinutes = lastRecord['duration_minutes'] as int?;
+          _currentActivityCalories = (lastRecord['calories_burned'] as num?)
+              ?.toDouble();
+          _currentActivityDistance = (lastRecord['distance_meters'] as num?)
+              ?.toDouble();
+
+          // 거리를 km로 변환
+          if (_currentActivityDistance != null) {
+            _currentActivityDistance = _currentActivityDistance! / 1000.0;
+          }
+
+          developer.log(
+            '🏃 진행 중 운동: $_currentActivityName, $_currentActivityMinutes분',
+          );
+        } else {
+          _currentActivityName = null;
         }
-        notifyListeners(); // 데이터 변경 알림
       }
     } catch (e) {
-      developer.log('❌ 헬스 데이터 동기화 실패: $e');
-      _errorMessage = '헬스 데이터 동기화 중 오류가 발생했습니다.';
+      developer.log('⚠️ 현재 운동 확인 실패: $e');
+    }
+  }
+
+  /// 웨어러블 권한 요청
+  Future<bool> requestHealthPermissions() async {
+    try {
+      final healthService = HealthDataService();
+      final granted = await healthService.requestPermissions();
+
+      if (granted) {
+        await checkWearableStatus();
+      }
+
+      return granted;
+    } catch (e) {
+      developer.log('❌ 권한 요청 실패: $e');
+      return false;
+    }
+  }
+
+  /// Health Connect에서 체중 동기화 및 아바타 업데이트
+  ///
+  /// 최신 체중을 가져와 UserProfile에 저장하고 아바타 체형(BMI)을 업데이트합니다.
+  Future<bool> syncWeightFromHealth() async {
+    try {
+      developer.log('⚖️ 체중 동기화 시작...');
+
+      final healthService = HealthDataService();
+      final latestWeight = await healthService.getLatestWeight();
+
+      if (latestWeight == null) {
+        developer.log('ℹ️ 동기화할 체중 데이터 없음');
+        return false;
+      }
+
+      if (_userProfile == null) {
+        developer.log('⚠️ 프로필이 없어 체중 동기화 불가');
+        return false;
+      }
+
+      // 현재 체중과 비교
+      final currentWeight = _userProfile!.initialWeight;
+      if ((currentWeight - latestWeight).abs() < 0.1) {
+        developer.log('ℹ️ 체중 변화 없음 (${latestWeight.toStringAsFixed(1)} kg)');
+        return true;
+      }
+
+      // UserProfile 업데이트
+      final updatedProfile = _userProfile!.copyWith(
+        initialWeight: latestWeight,
+      );
+      await saveUserProfile(updatedProfile);
+
+      developer.log(
+        '✅ 체중 동기화 완료: ${currentWeight.toStringAsFixed(1)} → ${latestWeight.toStringAsFixed(1)} kg',
+      );
+      developer.log('🎭 아바타 체형(BMI) 자동 업데이트됨');
+
+      // 아바타 상태 업데이트 (BMI 변경 반영)
+      _updateAvatarByCalorieStatus();
+
       notifyListeners();
+      return true;
+    } catch (e) {
+      developer.log('❌ 체중 동기화 실패: $e');
+      return false;
+    }
+  }
+
+  /// 체중 기록 가져오기
+  Future<List<Map<String, dynamic>>> getWeightHistoryFromHealth({
+    int days = 30,
+  }) async {
+    try {
+      final healthService = HealthDataService();
+      return await healthService.getWeightHistory(days: days);
+    } catch (e) {
+      developer.log('❌ 체중 기록 조회 실패: $e');
+      return [];
     }
   }
 }

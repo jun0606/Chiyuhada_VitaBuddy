@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/user_profile.dart';
+import '../l10n/app_localizations.dart';
 
 class SleepSettingsScreen extends StatefulWidget {
   const SleepSettingsScreen({super.key});
@@ -18,7 +19,10 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final profile = Provider.of<AppProvider>(context, listen: false).userProfile;
+    final profile = Provider.of<AppProvider>(
+      context,
+      listen: false,
+    ).userProfile;
     if (profile != null) {
       _mode = profile.sleepConfig.mode;
       _sleepTime = _parseTime(profile.sleepConfig.manualSleepTime);
@@ -60,23 +64,24 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<AppProvider>(context, listen: false);
     final profile = provider.userProfile;
-    
+
     if (profile != null) {
       final newConfig = profile.sleepConfig.copyWith(
         mode: _mode,
         manualSleepTime: _formatTime(_sleepTime),
         manualWakeTime: _formatTime(_wakeTime),
       );
-      
+
       final newProfile = profile.copyWith(sleepConfig: newConfig);
       await provider.saveUserProfile(newProfile);
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('수면 설정이 저장되었습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.sleepSettingsSaved)));
         Navigator.pop(context);
       }
     }
@@ -84,9 +89,10 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('수면 설정'),
+        title: Text(l10n.sleepSettingsTitle),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: Container(
@@ -94,10 +100,7 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFCFD8DC),
-                Color(0xFFECEFF1),
-              ],
+              colors: [Color(0xFFCFD8DC), Color(0xFFECEFF1)],
             ),
           ),
         ),
@@ -105,18 +108,18 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSectionTitle('수면 모드'),
+          _buildSectionTitle(l10n.sleepModeSection),
           const SizedBox(height: 8),
           _buildModeSelector(),
-          
+
           const SizedBox(height: 24),
-          
-          _buildSectionTitle('수면 시간 설정'),
+
+          _buildSectionTitle(l10n.sleepTimeSettings),
           const SizedBox(height: 8),
           _buildTimeSettingCard(),
-          
+
           const SizedBox(height: 24),
-          
+
           ElevatedButton(
             onPressed: _saveSettings,
             style: ElevatedButton.styleFrom(
@@ -126,9 +129,9 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              '저장하기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            child: Text(
+              l10n.saveSettings,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -148,6 +151,7 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
   }
 
   Widget _buildModeSelector() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -163,24 +167,24 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
       child: Column(
         children: [
           RadioListTile<String>(
-            title: const Text('하이브리드 (권장)'),
-            subtitle: const Text('스마트워치 데이터 우선, 없을 시 수동 시간 사용'),
+            title: Text(l10n.hybridMode),
+            subtitle: Text(l10n.hybridModeDesc),
             value: 'hybrid',
             groupValue: _mode,
             activeColor: const Color(0xFF546E7A),
             onChanged: (value) => setState(() => _mode = value!),
           ),
           RadioListTile<String>(
-            title: const Text('수동 설정'),
-            subtitle: const Text('설정된 시간에만 수면 모드 적용'),
+            title: Text(l10n.manualMode),
+            subtitle: Text(l10n.manualModeDesc),
             value: 'manual',
             groupValue: _mode,
             activeColor: const Color(0xFF546E7A),
             onChanged: (value) => setState(() => _mode = value!),
           ),
           RadioListTile<String>(
-            title: const Text('기기 전용'),
-            subtitle: const Text('스마트워치 데이터만 사용'),
+            title: Text(l10n.deviceOnlyMode),
+            subtitle: Text(l10n.deviceOnlyModeDesc),
             value: 'device',
             groupValue: _mode,
             activeColor: const Color(0xFF546E7A),
@@ -192,6 +196,7 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
   }
 
   Widget _buildTimeSettingCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -207,9 +212,9 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
       ),
       child: Column(
         children: [
-          _buildTimeRow('취침 시간', _sleepTime, true),
+          _buildTimeRow(l10n.bedtime, _sleepTime, true),
           const Divider(height: 24),
-          _buildTimeRow('기상 시간', _wakeTime, false),
+          _buildTimeRow(l10n.waketime, _wakeTime, false),
         ],
       ),
     );
@@ -221,10 +226,7 @@ class _SleepSettingsScreenState extends State<SleepSettingsScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF455A64),
-          ),
+          style: const TextStyle(fontSize: 16, color: Color(0xFF455A64)),
         ),
         InkWell(
           onTap: () => _selectTime(context, isSleepTime),

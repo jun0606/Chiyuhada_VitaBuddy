@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/app_provider.dart';
 import '../services/database_service.dart';
+import '../l10n/app_localizations.dart';
 
 class WeightRecordScreen extends StatefulWidget {
   const WeightRecordScreen({super.key});
@@ -35,9 +36,12 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
     try {
       _weightRecords = await DatabaseService().getWeightRecords();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('체중 기록을 불러오는데 실패했습니다: $e')));
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${l10n.weightLoadFailed}: $e')));
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -46,17 +50,19 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
   Future<void> _addWeightRecord() async {
     final weightText = _weightController.text.trim();
     if (weightText.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('체중을 입력해주세요')));
+      ).showSnackBar(SnackBar(content: Text(l10n.enterWeight)));
       return;
     }
 
     final weight = double.tryParse(weightText);
     if (weight == null || weight < 20 || weight > 300) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('올바른 체중을 입력해주세요 (20-300kg)')),
-      );
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.enterValidWeight)));
       return;
     }
 
@@ -72,9 +78,10 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
         await DatabaseService().addWeightRecord(weight, notes: notes);
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${weight}kg 체중이 기록되었습니다')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${weight}kg ${l10n.weightRecorded}')),
+      );
 
       // 입력 필드 초기화
       _weightController.clear();
@@ -83,9 +90,10 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
       // 기록 새로고침
       await _loadWeightRecords();
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('체중 기록에 실패했습니다: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.weightRecordFailed}: $e')));
     }
   }
 
@@ -95,59 +103,65 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
       final db = await DatabaseService().database;
       await db.delete('weight_records', where: 'id = ?', whereArgs: [id]);
 
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('체중 기록이 삭제되었습니다')));
+      ).showSnackBar(SnackBar(content: Text(l10n.weightRecordDeleted)));
 
       await _loadWeightRecords();
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('기록 삭제에 실패했습니다: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.deleteFailed}: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('체중 기록'),
+        title: Text(l10n.weightRecord),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadWeightRecords,
-            tooltip: '새로고침',
+            tooltip: l10n.refreshTooltip,
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // 체중 입력 섹션
-                _buildWeightInput(),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // 체중 입력 섹션
+                  _buildWeightInput(),
 
-                // 차트 섹션
-                if (_weightRecords.isNotEmpty) _buildChart(),
+                  // 차트 섹션
+                  if (_weightRecords.isNotEmpty) _buildChart(),
 
-                // 기록 목록
-                Expanded(
-                  child: _weightRecords.isEmpty
-                      ? const Center(child: Text('체중 기록이 없습니다'))
-                      : _buildRecordsList(),
-                ),
-              ],
-            ),
+                  // 기록 목록
+                  Expanded(
+                    child: _weightRecords.isEmpty
+                        ? Center(child: Text(l10n.noWeightRecords))
+                        : _buildRecordsList(),
+                  ),
+                ],
+              ),
+      ),
 
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddWeightDialog(),
-        tooltip: '체중 기록 추가',
+        tooltip: '${l10n.add} ${l10n.weightRecord}',
         child: const Icon(Icons.add),
       ),
     );
   }
 
   Widget _buildWeightInput() {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -155,7 +169,10 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('오늘의 체중', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.todaysWeight,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -163,28 +180,28 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
                   child: TextField(
                     controller: _weightController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: '체중 (kg)',
-                      hintText: '예: 70.5',
+                    decoration: InputDecoration(
+                      labelText: '${l10n.weight} (kg)',
+                      hintText: l10n.weightHint,
                       suffixText: 'kg',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: _addWeightRecord,
-                  child: const Text('기록'),
+                  child: Text(l10n.record),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: '메모 (선택사항)',
-                hintText: '예: 운동 후 측정',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.noteOptional,
+                hintText: l10n.noteHint,
+                border: const OutlineInputBorder(),
               ),
               maxLines: 2,
             ),
@@ -215,7 +232,10 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('체중 변화 추이', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              AppLocalizations.of(context)!.weightTrend,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             SizedBox(
               height: 200,
@@ -332,28 +352,29 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
   }
 
   void _showAddWeightDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('체중 기록 추가'),
+        title: Text('${l10n.add} ${l10n.weightRecord}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _weightController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '체중 (kg)',
-                hintText: '예: 70.5',
+              decoration: InputDecoration(
+                labelText: '${l10n.weight} (kg)',
+                hintText: l10n.weightHint,
                 suffixText: 'kg',
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: '메모 (선택사항)',
-                hintText: '예: 운동 후 측정',
+              decoration: InputDecoration(
+                labelText: l10n.noteOptional,
+                hintText: l10n.noteHint,
               ),
               maxLines: 2,
             ),
@@ -362,14 +383,14 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               _addWeightRecord();
             },
-            child: const Text('기록'),
+            child: Text(l10n.record),
           ),
         ],
       ),
@@ -377,15 +398,16 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
   }
 
   void _showDeleteDialog(int id) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('기록 삭제'),
-        content: const Text('이 체중 기록을 삭제하시겠습니까?'),
+        title: Text(l10n.deleteRecord),
+        content: Text(l10n.confirmDeleteWeight),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -393,7 +415,7 @@ class _WeightRecordScreenState extends State<WeightRecordScreen> {
               Navigator.of(context).pop();
               _deleteWeightRecord(id);
             },
-            child: const Text('삭제'),
+            child: Text(l10n.delete),
           ),
         ],
       ),

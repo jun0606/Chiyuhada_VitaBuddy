@@ -6,6 +6,7 @@ import '../providers/app_provider.dart';
 import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
 import '../services/database_service.dart'; // 데이터베이스 서비스
+import '../l10n/app_localizations.dart'; // 다국어 지원
 import 'food_input_screen.dart';
 import 'weight_record_screen.dart';
 import 'clothing_settings_screen.dart';
@@ -38,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
         appProvider.triggerWelcomeGreeting();
       }
     });
-    
+
     // 1분마다 화면 갱신 (식사 안내 메시지 시간 업데이트)
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) {
@@ -59,73 +60,74 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       extendBody: true, // BottomNavigationBar 아래까지 body 확장
       appBar: AppBar(
-  title: const Text(
-    '치유하다 VitaBuddy',
-    style: TextStyle(
-      color: Colors.white,        // 흰색으로 변경 → 네온 바탕에서 가장 또렷함
-      fontWeight: FontWeight.w800, // 조금 더 굵게
-      fontSize: 20,
-      shadows: [
-        Shadow(                           // 살짝만 그림자 주면 고급스러움 폭발
-          offset: Offset(0, 1),
-          blurRadius: 4,
-          color: Colors.black26,
+        title: Text(
+          AppLocalizations.of(context)!.homeTitle,
+          style: const TextStyle(
+            color: Colors.white, // 흰색으로 변경 → 네온 바탕에서 가장 또렷함
+            fontWeight: FontWeight.w800, // 조금 더 굵게
+            fontSize: 20,
+            shadows: [
+              Shadow(
+                // 살짝만 그림자 주면 고급스러움 폭발
+                offset: Offset(0, 1),
+                blurRadius: 4,
+                color: Colors.black26,
+              ),
+            ],
+          ),
         ),
-      ],
-    ),
-  ),
-  centerTitle: false, // 왼쪽 정렬로 더 모던하게
-  backgroundColor: Colors.transparent,
-  elevation: 0,
-  flexibleSpace: Container(
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF00FF7F),  // Spring Green (네온 민트)
-          Color(0xFF00E676),  // 조금 더 부드럽고 깊은 민트
-          Color(0xFF00B76A),  // 끝부분에 살짝 딥 그린으로 마무리 → 입체감 폭발
+        centerTitle: false, // 왼쪽 정렬로 더 모던하게
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF00FF7F), // Spring Green (네온 민트)
+                Color(0xFF00E676), // 조금 더 부드럽고 깊은 민트
+                Color(0xFF00B76A), // 끝부분에 살짝 딥 그린으로 마무리 → 입체감 폭발
+              ],
+              stops: [0.0, 0.6, 1.0], // 중간을 길게 해서 부드럽게 흘러가게
+            ),
+          ),
+        ),
+        actions: [
+          // 기록 보기 버튼
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            color: Colors.white,
+            tooltip: AppLocalizations.of(context)!.viewRecords,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => HistoryScreen()),
+              );
+            },
+          ),
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.developer_mode),
+              color: Colors.white,
+              tooltip: AppLocalizations.of(context)!.developerTest,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PolygonTestScreen()),
+                );
+              },
+            ),
         ],
-        stops: [0.0, 0.6, 1.0], // 중간을 길게 해서 부드럽게 흘러가게
       ),
-    ),
-  ),
-  actions: [
-    // 기록 보기 버튼
-    IconButton(
-      icon: const Icon(Icons.calendar_month),
-      color: Colors.white,
-      tooltip: '기록 보기',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => HistoryScreen()),
-        );
-      },
-    ),
-    if (kDebugMode)
-      IconButton(
-        icon: const Icon(Icons.developer_mode),
-        color: Colors.white,
-        tooltip: '개발자 테스트 화면',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PolygonTestScreen()),
-          );
-        },
-      ),
-  ],
-),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE8F5E9),  // 연한 민트 초록 (Morning Forest)
-              Color(0xFFFFFFFF),  // 순백색
+              Color(0xFFE8F5E9), // 연한 민트 초록 (Morning Forest)
+              Color(0xFFFFFFFF), // 순백색
             ],
             stops: [0.0, 1.0],
           ),
@@ -152,13 +154,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildAvatarSection(appProvider),
 
                     const SizedBox(height: 16),
-                    
+
                     // 식사 패턴 기반 칼로리 안내
                     _buildMealGuidanceCard(appProvider),
 
                     // 애니메이션 타입 선택 (제거됨)
                     // _buildAnimationControls(appProvider),
-
                     const SizedBox(height: 24),
 
                     // 빠른 액션 버튼들 (건강 챙기기)
@@ -211,15 +212,28 @@ class _HomeScreenState extends State<HomeScreen> {
             currentIndex: 0, // 현재 선택된 인덱스 (실제로는 페이지 이동하므로 큰 의미 없음)
             backgroundColor: Colors.transparent, // 투명 배경
             elevation: 0, // 그림자 제거
-            selectedItemColor: const Color(0xFF5E97F6), // 선택된 아이템: Soft Royal Blue
-            unselectedItemColor: const Color(0xFF90A4AE), // 선택 안 된 아이템: Blue Grey
+            selectedItemColor: const Color(
+              0xFF5E97F6,
+            ), // 선택된 아이템: Soft Royal Blue
+            unselectedItemColor: const Color(
+              0xFF90A4AE,
+            ), // 선택 안 된 아이템: Blue Grey
             type: BottomNavigationBarType.fixed, // 아이템이 3개 이상일 때 고정
             showSelectedLabels: true,
             showUnselectedLabels: true,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.soup_kitchen_rounded), label: '식사 기록'),
-              BottomNavigationBarItem(icon: Icon(Icons.directions_run_rounded), label: '운동 기록'),
-              BottomNavigationBarItem(icon: Icon(Icons.monitor_weight_rounded), label: '체중 기록'),
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.soup_kitchen_rounded),
+                label: AppLocalizations.of(context)!.mealRecord,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.directions_run_rounded),
+                label: AppLocalizations.of(context)!.exerciseRecord,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.monitor_weight_rounded),
+                label: AppLocalizations.of(context)!.weightRecord,
+              ),
             ],
             onTap: (index) async {
               switch (index) {
@@ -231,26 +245,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
 
                   print('🔍 [DEBUG] 식사 기록 화면 닫힘, result: $result');
-                  
+
                   // 음식이 추가되었다면 세레모니 실행
                   if (result == true && context.mounted) {
                     print('✅ [DEBUG] 세레모니 트리거 조건 충족, triggerCeremony() 호출');
-                    Provider.of<AppProvider>(context, listen: false).triggerCeremony();
+                    Provider.of<AppProvider>(
+                      context,
+                      listen: false,
+                    ).triggerCeremony();
                     print('✅ [DEBUG] triggerCeremony() 호출 완료');
                   } else {
-                    print('❌ [DEBUG] 세레모니 미실행 - result: $result, mounted: ${context.mounted}');
+                    print(
+                      '❌ [DEBUG] 세레모니 미실행 - result: $result, mounted: ${context.mounted}',
+                    );
                   }
                   break;
                 case 1:
                   // 운동 기록 화면
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ExerciseRecordScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ExerciseRecordScreen(),
+                    ),
                   );
                   break;
                 case 2:
                   // 체중 기록 화면
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WeightRecordScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const WeightRecordScreen(),
+                    ),
                   );
                   break;
               }
@@ -262,23 +285,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildWelcomeSection(AppProvider appProvider) {
-    final userName = appProvider.userProfile?.name ?? '사용자';
+    final l10n = AppLocalizations.of(context)!;
+    final userName = appProvider.userProfile?.name ?? l10n.user;
     final currentHour = DateTime.now().hour;
 
     String greeting;
     if (currentHour < 12) {
-      greeting = '상쾌한 아침이에요!';
+      greeting = l10n.homeGreetingMorning;
     } else if (currentHour < 18) {
-      greeting = '나른한 오후, 힘내세요!';
+      greeting = l10n.homeGreetingAfternoon;
     } else {
-      greeting = '오늘 하루도 수고했어요!';
+      greeting = l10n.homeGreetingEvening;
     }
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(153), // 반투명 흰색 배경
         borderRadius: BorderRadius.circular(24), // 더 둥글게
-        border: Border.all(color: const Color(0xFFA5D6A7).withAlpha(128)), // 연한 초록 테두리
+        border: Border.all(
+          color: const Color(0xFFA5D6A7).withAlpha(128),
+        ), // 연한 초록 테두리
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF4CAF50).withAlpha(26), // 연한 초록 그림자
@@ -289,59 +315,252 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Row(
+        child: Column(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white.withAlpha(128),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/logo/logowind.jpeg',
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white.withAlpha(128),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/logo/logowind.jpeg',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$userName님, $greeting',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF37474F), // Dark Blue Grey (가독성 강화)
-                    ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.homeGreetingFormat(userName, greeting),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF37474F), // Dark Blue Grey (가독성 강화)
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.homeSubtitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF546E7A), // Blue Grey
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '오늘도 편안한 마음으로 건강을 챙겨봐요.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF546E7A), // Blue Grey
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+            // 웨어러블 상태 배지
+            const SizedBox(height: 12),
+            _buildWearableStatusBadge(appProvider),
           ],
         ),
       ),
     );
   }
 
+  /// 웨어러블 상태 배지 위젯
+  Widget _buildWearableStatusBadge(AppProvider appProvider) {
+    final l10n = AppLocalizations.of(context)!;
 
+    // 현재 운동 중인 경우
+    if (appProvider.currentActivityName != null) {
+      return _buildActivityBadge(appProvider);
+    }
+
+    // 권한 없는 경우
+    if (!appProvider.hasHealthPermission) {
+      return GestureDetector(
+        onTap: () async {
+          final granted = await appProvider.requestHealthPermissions();
+          if (granted && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('✅ ${l10n.healthPermissionGranted}')),
+            );
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0), // 연한 오렌지
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFFB74D).withAlpha(128)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFF57C00),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '⚠️ ${l10n.wearablePermissionRequired}',
+                style: const TextStyle(
+                  color: Color(0xFFF57C00),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.touch_app, color: Color(0xFFF57C00), size: 14),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 연결됨
+    if (appProvider.isWearableConnected) {
+      final platformName =
+          appProvider.connectedPlatformName ?? l10n.healthPlatformName;
+      final lastSync = appProvider.lastHealthSyncTime;
+      String syncText = '';
+      if (lastSync != null) {
+        final diff = DateTime.now().difference(lastSync);
+        if (diff.inMinutes < 1) {
+          syncText = ' · ${l10n.syncedJustNow}';
+        } else if (diff.inMinutes < 60) {
+          syncText = ' · ${l10n.syncedMinutesAgo(diff.inMinutes)}';
+        } else if (diff.inHours < 24) {
+          syncText = ' · ${l10n.syncedHoursAgo(diff.inHours)}';
+        }
+      }
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F5E9), // 연한 초록
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFA5D6A7).withAlpha(128)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.link, color: Color(0xFF4CAF50), size: 16),
+            const SizedBox(width: 6),
+            Text(
+              '🔗 $platformName$syncText',
+              style: const TextStyle(
+                color: Color(0xFF2E7D32),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 미연결
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFECEFF1), // 연한 회색
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFB0BEC5).withAlpha(128)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.link_off, color: Color(0xFF78909C), size: 16),
+          const SizedBox(width: 6),
+          Text(
+            '📴 ${l10n.notConnected}',
+            style: const TextStyle(
+              color: Color(0xFF78909C),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 운동 중 상태 배지 (운동별 맞춤 정보)
+  Widget _buildActivityBadge(AppProvider appProvider) {
+    final l10n = AppLocalizations.of(context)!;
+    final activityName = appProvider.currentActivityName ?? '운동';
+    final minutes = appProvider.currentActivityMinutes ?? 0;
+    final calories = appProvider.currentActivityCalories ?? 0.0;
+    final distance = appProvider.currentActivityDistance;
+
+    // 운동별 아이콘 및 정보 설정
+    IconData icon;
+    String infoText;
+
+    switch (activityName.toLowerCase()) {
+      case 'walking':
+        icon = Icons.directions_walk;
+        infoText = distance != null
+            ? '🚶 ${l10n.walking} ${distance.toStringAsFixed(1)}km · ${calories.toInt()}kcal'
+            : '🚶 ${l10n.walking} $minutes${l10n.minutesShort} · ${calories.toInt()}kcal';
+        break;
+      case 'running':
+        icon = Icons.directions_run;
+        infoText =
+            '🏃 ${l10n.running} $minutes${l10n.minutesShort} · ${calories.toInt()}kcal';
+        break;
+      case 'cycling':
+        icon = Icons.directions_bike;
+        infoText = distance != null
+            ? '🚴 ${l10n.cycling} ${distance.toStringAsFixed(1)}km · ${calories.toInt()}kcal'
+            : '🚴 ${l10n.cycling} $minutes${l10n.minutesShort} · ${calories.toInt()}kcal';
+        break;
+      case 'swimming':
+        icon = Icons.pool;
+        infoText =
+            '🏊 ${l10n.swimming} $minutes${l10n.minutesShort} · ${calories.toInt()}kcal';
+        break;
+      default:
+        icon = Icons.fitness_center;
+        infoText = '💪 $activityName · ${calories.toInt()}kcal';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD), // 연한 파랑
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF90CAF9).withAlpha(128)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFF1976D2), size: 16),
+          const SizedBox(width: 6),
+          Text(
+            infoText,
+            style: const TextStyle(
+              color: Color(0xFF1565C0),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildAvatarSection(AppProvider appProvider) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: 420, // 게이지 공간 확보를 위해 높이 증가
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(179), // 반투명 흰색
         borderRadius: BorderRadius.circular(30), // 둥근 모서리 (구름 느낌)
-        border: Border.all(color: const Color(0xFFA5D6A7).withAlpha(128)), // 연한 초록 테두리
+        border: Border.all(
+          color: const Color(0xFFA5D6A7).withAlpha(128),
+        ), // 연한 초록 테두리
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF4CAF50).withAlpha(26), // 연한 초록 그림자
@@ -362,13 +581,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 final height = provider.getHeightFromProvider();
                 final weight = provider.getWeightFromProvider();
                 final bmi = weight / ((height / 100) * (height / 100));
-                
+
                 return AdvancedAvatarWidget(
                   bmi: bmi,
                   height: height,
                   gender: provider.getGenderFromProvider(),
                   lifestyle: _mapActivityLevelToLifestylePattern(
-                    provider.userProfile?.activityLevel ?? 'moderate'
+                    provider.userProfile?.activityLevel ?? 'moderate',
                   ),
                   clothingColors: provider.userProfile?.getClothingColors(),
                   expression: provider.currentExpression,
@@ -390,10 +609,11 @@ class _HomeScreenState extends State<HomeScreen> {
               tdeeBurned: appProvider.tdeeBurnedCalories, // TDEE 소모
               height: 36,
               showLabel: true,
-              mealPattern: appProvider.userProfile?.getMealPattern(), // 식사 패턴 전달
+              mealPattern: appProvider.userProfile
+                  ?.getMealPattern(), // 식사 패턴 전달
             ),
           ),
-          
+
           // 3. 오른쪽 상단 설정 버튼
           Positioned(
             top: 16,
@@ -408,14 +628,17 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          
+
           // 4. 수면 모드 표시 (왼쪽 상단)
           if (appProvider.isSleepMode)
             Positioned(
               top: 16,
               left: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF3F51B5).withAlpha(204), // Indigo 80%
                   borderRadius: BorderRadius.circular(20),
@@ -427,14 +650,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.bedtime_rounded, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
+                    const Icon(
+                      Icons.bedtime_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
                     Text(
-                      '수면 모드',
-                      style: TextStyle(
+                      l10n.sleepMode,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -449,9 +676,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-
   Widget _buildClothingButton() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFE8F5E9).withAlpha(230), // 연한 민트 배경
@@ -465,14 +691,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: IconButton(
-        icon: const Icon(Icons.checkroom_rounded, color: Color(0xFF37474F)), // Dark Blue Grey 아이콘
-        tooltip: '옷 색상 변경',
+        icon: const Icon(
+          Icons.checkroom_rounded,
+          color: Color(0xFF37474F),
+        ), // Dark Blue Grey 아이콘
+        tooltip: l10n.changeClothingColor,
         iconSize: 24,
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const ClothingSettingsScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const ClothingSettingsScreen()),
           );
         },
       ),
@@ -485,11 +712,11 @@ class _HomeScreenState extends State<HomeScreen> {
         Icon(icon, color: const Color(0xFF66BB6A)), // Soft Green
         const SizedBox(height: 4),
         Text(
-          label, 
+          label,
           style: const TextStyle(
-            fontSize: 12, 
+            fontSize: 12,
             color: Color(0xFF546E7A), // Blue Grey
-          )
+          ),
         ),
         Text(
           value,
@@ -505,10 +732,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 식사 패턴 기반 칼로리 안내 카드
   Widget _buildMealGuidanceCard(AppProvider appProvider) {
+    final l10n = AppLocalizations.of(context)!;
     final guidance = MealPatternCalorieGuide.getGuidance(
       mealPattern: appProvider.userProfile?.getMealPattern(),
       dailyGoal: appProvider.dailyCalorieGoal,
       currentIntake: appProvider.totalCalories,
+      l10n: l10n,
     );
 
     return Container(
@@ -521,8 +750,8 @@ class _HomeScreenState extends State<HomeScreen> {
             guidance.isLow
                 ? const Color(0xFFFFF3E0) // 부족: 따뜻한 오렌지
                 : guidance.isHigh
-                    ? const Color(0xFFFFEBEE) // 초과: 부드러운 빨강
-                    : const Color(0xFFE8F5E9), // 적정: 연한 민트
+                ? const Color(0xFFFFEBEE) // 초과: 부드러운 빨강
+                : const Color(0xFFE8F5E9), // 적정: 연한 민트
             Colors.white.withAlpha(230),
           ],
         ),
@@ -531,8 +760,8 @@ class _HomeScreenState extends State<HomeScreen> {
           color: guidance.isLow
               ? const Color(0xFFFFB74D).withAlpha(128)
               : guidance.isHigh
-                  ? const Color(0xFFEF5350).withAlpha(128)
-                  : const Color(0xFFA5D6A7).withAlpha(128),
+              ? const Color(0xFFEF5350).withAlpha(128)
+              : const Color(0xFFA5D6A7).withAlpha(128),
         ),
         boxShadow: [
           BoxShadow(
@@ -555,14 +784,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: guidance.isLow
                       ? const Color(0xFFF57C00)
                       : guidance.isHigh
-                          ? const Color(0xFFD32F2F)
-                          : const Color(0xFF4CAF50),
+                      ? const Color(0xFFD32F2F)
+                      : const Color(0xFF4CAF50),
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  '🍽️ 식사 안내',
-                  style: TextStyle(
+                Text(
+                  '🍽️ ${l10n.mealGuidance}',
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF37474F),
@@ -583,7 +812,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // 다음 식사 정보
-            if (guidance.nextMealName != null && guidance.caloriesUntilNextMeal != null) ...[
+            if (guidance.nextMealName != null &&
+                guidance.caloriesUntilNextMeal != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -604,9 +834,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '💡 ${guidance.nextMealName ?? "다음 식사"}(${guidance.nextMealTime ?? "--:--"})까지 '
+                        '💡 ${guidance.nextMealName}(${guidance.nextMealTime ?? "--:--"})${l10n.until} '
                         '${guidance.caloriesUntilNextMeal != null ? (guidance.caloriesUntilNextMeal! / 50).round() * 50 : 0}kcal '
-                        '${(guidance.caloriesUntilNextMeal ?? 0) > 0 ? "더 필요" : "줄이세요"}',
+                        '${(guidance.caloriesUntilNextMeal ?? 0) > 0 ? l10n.moreNeeded : l10n.reduceIntake}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF37474F),
@@ -623,13 +853,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
- Widget _buildQuickActions() {
+  Widget _buildQuickActions() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '건강 챙기기', // 문구 변경
-          style: TextStyle(
+        Text(
+          l10n.quickActionsTitle,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Color(0xFF37474F), // Dark Blue Grey
@@ -640,23 +871,30 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildActionButton(
-                '식사 기록',
+                l10n.mealRecordButton,
                 Icons.soup_kitchen_rounded, // 음식 아이콘
                 () async {
                   print('🔍 [DEBUG] 식사 기록 ActionButton 클릭');
                   final result = await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const FoodInputScreen()),
                   );
-                  
+
                   print('🔍 [DEBUG] 식사 기록 ActionButton 닫힘, result: $result');
-                  
+
                   // 음식이 추가되었다면 세레모니 실행
                   if (result == true && context.mounted) {
-                    print('✅ [DEBUG] ActionButton 세레모니 트리거, triggerCeremony() 호출');
-                    Provider.of<AppProvider>(context, listen: false).triggerCeremony();
+                    print(
+                      '✅ [DEBUG] ActionButton 세레모니 트리거, triggerCeremony() 호출',
+                    );
+                    Provider.of<AppProvider>(
+                      context,
+                      listen: false,
+                    ).triggerCeremony();
                     print('✅ [DEBUG] ActionButton triggerCeremony() 호출 완료');
                   } else {
-                    print('❌ [DEBUG] ActionButton 세레모니 미실행 - result: $result, mounted: ${context.mounted}');
+                    print(
+                      '❌ [DEBUG] ActionButton 세레모니 미실행 - result: $result, mounted: ${context.mounted}',
+                    );
                   }
                 },
                 const Color(0xFFA5D6A7), // 연한 초록 배경
@@ -665,11 +903,13 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionButton(
-                '운동 기록',
+                l10n.exerciseRecordButton,
                 Icons.directions_run_rounded, // 운동 아이콘
                 () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ExerciseRecordScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ExerciseRecordScreen(),
+                    ),
                   );
                 },
                 const Color(0xFFFFCC80), // 연한 오렌지 배경
@@ -678,11 +918,13 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionButton(
-                '체중 기록',
+                l10n.weightRecordButton,
                 Icons.monitor_weight_rounded, // 둥근 아이콘
                 () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WeightRecordScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const WeightRecordScreen(),
+                    ),
                   );
                 },
                 const Color(0xFF90CAF9), // 연한 파랑 배경
@@ -724,7 +966,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 28, color: const Color(0xFF37474F)), // Dark Blue Grey 아이콘
+            Icon(
+              icon,
+              size: 28,
+              color: const Color(0xFF37474F),
+            ), // Dark Blue Grey 아이콘
             const SizedBox(height: 8),
             Text(
               label,
@@ -741,6 +987,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTodaySummary(AppProvider appProvider) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(153),
@@ -752,9 +999,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '오늘의 건강 노트',
-              style: TextStyle(
+            Text(
+              l10n.todayHealthNote,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2E3B32),
@@ -765,51 +1012,52 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildSummaryItem(
-                  'BMI',
+                  l10n.bmiLabel,
                   appProvider.bmi.toStringAsFixed(1),
                   _getBMIStatus(appProvider.bmi),
                 ),
                 _buildSummaryItem(
-                  '체중',
+                  l10n.weightLabel,
                   '${appProvider.userProfile?.initialWeight.toStringAsFixed(1)} kg',
-                  '현재',
+                  l10n.currentLabel,
                 ),
                 _buildSummaryItem(
-                  '하루 권장 칼로리',
+                  l10n.dailyGoalLabel,
                   '${appProvider.dailyCalorieGoal.toInt()} kcal',
-                  '목표',
+                  l10n.goalLabel,
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            
+
             // 운동 칼로리 및 순 칼로리 (AppProvider 사용으로 통일)
             Builder(
               builder: (context) {
                 final intakeCalories = appProvider.totalCalories;
-                final burnedCalories = appProvider.totalBurnedCalories; // TDEE 포함 전체 소모
+                final burnedCalories =
+                    appProvider.totalBurnedCalories; // TDEE 포함 전체 소모
                 final netCalories = appProvider.netCalories; // 순 칼로리 (현재 칼로리)
-                
+
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildSummaryItem(
-                      '섭취',
+                      l10n.intakeLabel,
                       '${intakeCalories.toInt()} kcal',
-                      '오늘',
+                      l10n.todayLabel,
                     ),
                     _buildSummaryItem(
-                      '소모',
+                      l10n.burnedLabel,
                       '${burnedCalories.toInt()} kcal',
-                      '전체', // 운동 + TDEE
+                      l10n.totalLabel, // 운동 + TDEE
                     ),
                     _buildSummaryItem(
-                      '현재 칼로리', // 용어 변경
+                      l10n.netCaloriesLabel, // 용어 변경
                       '${netCalories.toInt()} kcal',
-                      netCalories > 0 ? '잉여' : '적자',
+                      netCalories > 0 ? l10n.surplusLabel : l10n.deficitLabel,
                     ),
                   ],
                 );
@@ -820,7 +1068,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   /// 오늘 소모한 칼로리 가져오기
   Future<double> _getTodayBurnedCalories() async {
     try {
@@ -836,11 +1084,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         Text(
-          label, 
+          label,
           style: const TextStyle(
             fontSize: 12,
             color: Color(0xFF546E7A), // Blue Grey
-          )
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -863,27 +1111,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getBMIStatus(double bmi) {
-    if (bmi < 18.5) return '저체중';
-    if (bmi < 25) return '정상';
-    if (bmi < 30) return '과체중';
-    return '비만';
+    final l10n = AppLocalizations.of(context)!;
+    if (bmi < 18.5) return l10n.bmiUnderweight;
+    if (bmi < 25) return l10n.bmiNormal;
+    if (bmi < 30) return l10n.bmiOverweight;
+    return l10n.bmiObese;
   }
 
   Widget _buildMotivationMessage(AppProvider appProvider) {
+    final l10n = AppLocalizations.of(context)!;
     String message;
     String icon;
     Color backgroundColor;
 
     if (appProvider.isOverCalorieLimit) {
-      message = '괜찮아요, 내일 조금 더 움직이면 돼요. 🌿';
+      message = l10n.motivationOverLimit;
       icon = '🍃';
       backgroundColor = const Color(0xFFFFF3E0); // 연한 오렌지 (따뜻함)
     } else if (appProvider.isNearLimit) {
-      message = '오늘 하루, 정말 열심히 보냈군요! ☀️';
+      message = l10n.motivationNearLimit;
       icon = '✨';
       backgroundColor = const Color(0xFFFFF9C4); // 연한 노랑 (햇살)
     } else {
-      message = '당신의 속도대로 가고 있어요. 아주 잘하고 있습니다. 👏';
+      message = l10n.motivationGood;
       icon = '🌱';
       backgroundColor = const Color(0xFFE8F5E9); // 연한 초록 (평온)
     }
@@ -922,7 +1172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   // 활동량 레벨을 LifestylePattern으로 변환
   LifestylePattern _mapActivityLevelToLifestylePattern(String activityLevel) {
     switch (activityLevel) {
@@ -938,13 +1188,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return LifestylePattern.active;
     }
   }
-  
+
   /// 🌟 칼로리 상태별 오라 색상 결정
   Color _getAuraColor(double current, double goal) {
+    final l10n = AppLocalizations.of(context)!;
     if (goal == 0) return Colors.transparent;
-    
+
     final percentage = current / goal;
-    
+
     if (percentage >= 0.8 && percentage <= 1.0) {
       return Colors.green; // 🟢 이상적
     } else if (percentage > 1.0 && percentage <= 1.2) {
@@ -954,7 +1205,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (percentage < 0.5) {
       return Colors.blue; // 💙 저칼로리
     }
-    
+
     return Colors.transparent; // 보통 (50-80%)
   }
 }
@@ -963,12 +1214,9 @@ class _HomeScreenState extends State<HomeScreen> {
 class _AvatarWithAura extends StatefulWidget {
   final Color auraColor;
   final Widget child;
-  
-  const _AvatarWithAura({
-    required this.auraColor,
-    required this.child,
-  });
-  
+
+  const _AvatarWithAura({required this.auraColor, required this.child});
+
   @override
   State<_AvatarWithAura> createState() => _AvatarWithAuraState();
 }
@@ -977,7 +1225,7 @@ class _AvatarWithAuraState extends State<_AvatarWithAura>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -985,24 +1233,24 @@ class _AvatarWithAuraState extends State<_AvatarWithAura>
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(begin: 20.0, end: 35.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
-  
+
   @override
   void dispose() {
     _pulseController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (widget.auraColor == Colors.transparent) {
       return widget.child;
     }
-    
+
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {

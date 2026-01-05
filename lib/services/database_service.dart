@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'dart:developer' as developer;
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -22,7 +23,7 @@ class DatabaseService {
     String path = join(documentsDirectory.path, 'chiyuhada_vita_buddy.db');
     return await openDatabase(
       path,
-      version: 4,  // 즐겨찾기 및 최근 음식 기능 추가
+      version: 5, // custom_name, package_name 추가
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -81,6 +82,8 @@ class DatabaseService {
         average_heart_rate INTEGER,
         steps INTEGER,
         external_id TEXT,
+        custom_name TEXT,
+        package_name TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     ''');
@@ -117,7 +120,7 @@ class DatabaseService {
       // 1. exercise_records 테이블이 존재하는지 확인
       // 1. exercise_records 테이블이 존재하는지 확인
       var tableExists = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='exercise_records'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='exercise_records'",
       );
 
       if (tableExists.isEmpty) {
@@ -141,16 +144,52 @@ class DatabaseService {
         ''');
       } else {
         // 테이블이 이미 있으면 컬럼 추가 (기존 사용자 마이그레이션)
-        // 컬럼 존재 여부 확인 후 추가하는 것이 안전하지만, 
+        // 컬럼 존재 여부 확인 후 추가하는 것이 안전하지만,
         // 여기서는 try-catch로 감싸서 중복 추가 에러 방지
-        try { await db.execute('ALTER TABLE exercise_records ADD COLUMN source TEXT DEFAULT "manual"'); } catch (e) { /* ignore */ }
-        try { await db.execute('ALTER TABLE exercise_records ADD COLUMN exercise_type TEXT'); } catch (e) { /* ignore */ }
-        try { await db.execute('ALTER TABLE exercise_records ADD COLUMN distance_meters REAL'); } catch (e) { /* ignore */ }
-        try { await db.execute('ALTER TABLE exercise_records ADD COLUMN average_heart_rate INTEGER'); } catch (e) { /* ignore */ }
-        try { await db.execute('ALTER TABLE exercise_records ADD COLUMN steps INTEGER'); } catch (e) { /* ignore */ }
-        try { await db.execute('ALTER TABLE exercise_records ADD COLUMN external_id TEXT'); } catch (e) { /* ignore */ }
+        try {
+          await db.execute(
+            'ALTER TABLE exercise_records ADD COLUMN source TEXT DEFAULT "manual"',
+          );
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          await db.execute(
+            'ALTER TABLE exercise_records ADD COLUMN exercise_type TEXT',
+          );
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          await db.execute(
+            'ALTER TABLE exercise_records ADD COLUMN distance_meters REAL',
+          );
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          await db.execute(
+            'ALTER TABLE exercise_records ADD COLUMN average_heart_rate INTEGER',
+          );
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          await db.execute(
+            'ALTER TABLE exercise_records ADD COLUMN steps INTEGER',
+          );
+        } catch (e) {
+          /* ignore */
+        }
+        try {
+          await db.execute(
+            'ALTER TABLE exercise_records ADD COLUMN external_id TEXT',
+          );
+        } catch (e) {
+          /* ignore */
+        }
       }
-      
+
       // health_sync_log 테이블 생성 (존재하지 않을 경우)
       await db.execute('''
         CREATE TABLE IF NOT EXISTS health_sync_log (
@@ -163,7 +202,7 @@ class DatabaseService {
         )
       ''');
     }
-    
+
     // 버전 3 → 4: 즐겨찾기 기능 추가
     if (oldVersion < 4) {
       await db.execute('''
@@ -174,6 +213,23 @@ class DatabaseService {
           FOREIGN KEY (food_id) REFERENCES foods (id)
         )
       ''');
+    }
+
+    if (oldVersion < 5) {
+      try {
+        await db.execute(
+          'ALTER TABLE exercise_records ADD COLUMN custom_name TEXT',
+        );
+      } catch (e) {
+        /* ignore */
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE exercise_records ADD COLUMN package_name TEXT',
+        );
+      } catch (e) {
+        /* ignore */
+      }
     }
   }
 
@@ -323,6 +379,31 @@ class DatabaseService {
     return 0.0;
   }
 
+  Future<int> updateFoodIntake(
+    int id, {
+    int? foodId,
+    double? quantity,
+    double? calories,
+    String? time,
+  }) async {
+    Database db = await database;
+    Map<String, dynamic> updateData = {};
+
+    if (foodId != null) updateData['food_id'] = foodId;
+    if (quantity != null) updateData['quantity'] = quantity;
+    if (calories != null) updateData['calories'] = calories;
+    if (time != null) updateData['time'] = time;
+
+    if (updateData.isEmpty) return 0;
+
+    return await db.update(
+      'food_intakes',
+      updateData,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> deleteFoodIntake(int id) async {
     Database db = await database;
     await db.delete('food_intakes', where: 'id = ?', whereArgs: [id]);
@@ -332,7 +413,9 @@ class DatabaseService {
   /// 저장된 모든 음식의 고유 카테고리 목록을 조회합니다.
   Future<List<String>> getUniqueCategories() async {
     final db = await database;
-    final result = await db.rawQuery('SELECT DISTINCT category FROM foods WHERE category IS NOT NULL ORDER BY category');
+    final result = await db.rawQuery(
+      'SELECT DISTINCT category FROM foods WHERE category IS NOT NULL ORDER BY category',
+    );
     return result.map((row) => row['category'] as String).toList();
   }
 
@@ -340,9 +423,10 @@ class DatabaseService {
     Database db = await database;
     DateTime startDate = DateTime.now().subtract(Duration(days: days));
     String startDateStr = startDate.toIso8601String().split('T')[0];
-    
+
     // 최근 N일 내에 먹은 고유한 음식들, 가장 최근 섭취 시간 기준 정렬
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT DISTINCT
         f.id,
         f.name,
@@ -356,27 +440,27 @@ class DatabaseService {
       GROUP BY f.id
       ORDER BY last_eaten DESC
       LIMIT 20
-    ''', [startDateStr]);
+    ''',
+      [startDateStr],
+    );
   }
 
   /// 즐겨찾기 추가
   Future<int> addFavorite(int foodId) async {
     Database db = await database;
-    
+
     // 이미 즐겨찾기인지 확인
     List<Map<String, dynamic>> existing = await db.query(
       'favorites',
       where: 'food_id = ?',
       whereArgs: [foodId],
     );
-    
+
     if (existing.isNotEmpty) {
       return existing.first['id'] as int; // 이미 존재하면 기존 ID 반환
     }
-    
-    return await db.insert('favorites', {
-      'food_id': foodId,
-    });
+
+    return await db.insert('favorites', {'food_id': foodId});
   }
 
   /// 즐겨찾기 제거
@@ -430,13 +514,25 @@ class DatabaseService {
     });
   }
 
-  Future<List<Map<String, dynamic>>> getExerciseRecordsForDate(String date) async {
+  Future<List<Map<String, dynamic>>> getExerciseRecordsForDate(
+    String date,
+  ) async {
     Database db = await database;
     return await db.query(
       'exercise_records',
       where: 'date = ?',
       whereArgs: [date],
       orderBy: 'time ASC',
+    );
+  }
+
+  Future<int> updateExerciseRecords(int id, Map<String, dynamic> data) async {
+    Database db = await database;
+    return await db.update(
+      'exercise_records',
+      data,
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 
@@ -458,38 +554,48 @@ class DatabaseService {
   }
 
   /// Health 데이터로부터 운동 기록 저장
-  /// 
+  ///
   /// external_id를 통해 중복 방지
   Future<int> insertExerciseFromHealth(Map<String, dynamic> workout) async {
     Database db = await database;
-    
-    return await db.insert('exercise_records', {
-      'exercise_name': workout['type'] ?? 'Unknown',
-      'duration_minutes': workout['duration_minutes'] ?? 0,
-      'calories_burned': workout['calories'] ?? 0.0,
-      'date': (workout['start_time'] as String).split('T')[0],
-      'time': (workout['start_time'] as String).split('T')[1].substring(0, 5),
-      'source': workout['source'] ?? 'health_connect',
-      'exercise_type': workout['type'],
-      'distance_meters': workout['distance'],
-      'external_id': workout['id'], // UUID from Health Connect/HealthKit
-    });
+
+    // id 필드는 자동 생성이므로 제거 (workout['id']가 UUID 문자열일 수 있음)
+    final Map<String, dynamic> dataToInsert = Map.from(workout);
+    dataToInsert.remove('id');
+
+    // time 필드가 ISO8601 포맷인 경우 HH:mm으로 변환하여 저장 (기존 스키마 호환성)
+    if (dataToInsert['time'] != null &&
+        dataToInsert['time'].toString().contains('T')) {
+      final isoTime = dataToInsert['time'].toString();
+      dataToInsert['time'] = isoTime.split('T')[1].substring(0, 5);
+    }
+
+    developer.log('💾 DB INSERT (exercise_records): $dataToInsert');
+    return await db.insert('exercise_records', dataToInsert);
   }
 
   /// external_id로 중복 확인
-  /// 
+  ///
   /// 동일한 external_id가 이미 존재하면 true 반환
   Future<bool> checkExerciseDuplicate(String externalId) async {
+    final record = await getExerciseByExternalId(externalId);
+    return record != null;
+  }
+
+  /// external_id로 레코드 가져오기
+  Future<Map<String, dynamic>?> getExerciseByExternalId(
+    String externalId,
+  ) async {
     Database db = await database;
-    
+
     final results = await db.query(
       'exercise_records',
       where: 'external_id = ?',
       whereArgs: [externalId],
       limit: 1,
     );
-    
-    return results.isNotEmpty;
+
+    return results.isNotEmpty ? results.first : null;
   }
 
   Future<void> deleteExerciseRecord(int id) async {
@@ -500,27 +606,34 @@ class DatabaseService {
   // 📊 히스토리 요약 데이터 가져오기 (섭취, 소비, 체중 병합)
   Future<List<Map<String, dynamic>>> getDailySummaries({int limit = 7}) async {
     Database db = await database;
-    
+
     // 1. 날짜별 섭취 칼로리
-    final intakeResults = await db.rawQuery('''
+    final intakeResults = await db.rawQuery(
+      '''
       SELECT date, SUM(calories) as total_intake
       FROM food_intakes
       GROUP BY date
       ORDER BY date DESC
       LIMIT ?
-    ''', [limit]);
+    ''',
+      [limit],
+    );
 
     // 2. 날짜별 소비 칼로리
-    final burnedResults = await db.rawQuery('''
+    final burnedResults = await db.rawQuery(
+      '''
       SELECT date, SUM(calories_burned) as total_burned
       FROM exercise_records
       GROUP BY date
       ORDER BY date DESC
       LIMIT ?
-    ''', [limit]);
+    ''',
+      [limit],
+    );
 
     // 3. 날짜별 체중 (해당 날짜의 가장 마지막 기록)
-    final weightResults = await db.rawQuery('''
+    final weightResults = await db.rawQuery(
+      '''
       SELECT date, weight
       FROM weight_records
       WHERE id IN (
@@ -530,7 +643,9 @@ class DatabaseService {
       )
       ORDER BY date DESC
       LIMIT ?
-    ''', [limit]);
+    ''',
+      [limit],
+    );
 
     // 4. 데이터 병합 (날짜 기준)
     Map<String, Map<String, dynamic>> mergedData = {};

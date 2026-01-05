@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/user_profile.dart'; // UserProfileAdapter 등록용
 import 'screens/splash_screen.dart';
+import 'screens/enhanced_profile_setup_screen.dart';
 // 검증용 임포트
 import 'services/notification_service.dart'; // 알림 서비스
 
 void main() async {
+  // 반드시 실행되는 강력한 로그들
+  print('🚀 === VITA BUDDY APP START ===');
+  print('🚀 VITA BUDDY MAIN START - PRINT');
+  debugPrint('🚀 VITA BUDDY MAIN START - DEBUG PRINT');
+
   WidgetsFlutterBinding.ensureInitialized();
+
+  print('📱 Flutter 바인딩 초기화 완료 - PRINT');
+  debugPrint('📱 Flutter 바인딩 초기화 완료 - DEBUG PRINT');
 
   // 알림 서비스 초기화
   await NotificationService().initialize();
+
+  // Hive 초기화 (앱 시작 시 최우선 실행)
+  await Hive.initFlutter();
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(UserProfileAdapter());
+  }
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(SleepConfigAdapter());
+  }
+  print('💾 Hive 초기화 및 어댑터 등록 완료');
 
   // 앱 프로바이더 초기화
   final appProvider = AppProvider();
@@ -29,8 +51,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appProvider = Provider.of<AppProvider>(context);
+
     return MaterialApp(
-      title: '치유하다 VitaBuddy',
+      title: 'Chiyuhada VitaBuddy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -74,17 +98,24 @@ class MyApp extends StatelessWidget {
 
       // 다국어 지원
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('ko', 'KR'), // 한국어
-        Locale('en', 'US'), // 영어
+        Locale('ko'), // 한국어
+        Locale('en'), // 영어
+        Locale('ja'), // 일본어
+        Locale('id'), // 인도네시아어
+        Locale('ms'), // 말레이시아어
       ],
-      locale: const Locale('ko', 'KR'), // 기본 한국어
+      locale: appProvider.locale, // 동적 언어 설정 적용
 
       home: const SplashScreen(),
+      routes: {
+        '/profile-setup': (context) => const EnhancedProfileSetupScreen(),
+      },
       // home: const PolygonTestScreen(), // 개발자 테스트용 (디버그: HomeScreen의 개발자 아이콘 사용)
     );
   }

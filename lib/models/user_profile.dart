@@ -6,18 +6,22 @@ import 'body_types.dart';
 
 part 'user_profile.g.dart';
 
-/// 수면 설정 데이터 모델
+@HiveType(typeId: 1)
 class SleepConfig {
   /// 수면 모드 ('manual', 'device', 'hybrid')
+  @HiveField(0)
   final String mode;
-  
+
   /// 수동 수면 시작 시간 (HH:mm)
+  @HiveField(1)
   final String manualSleepTime;
-  
+
   /// 수동 기상 시간 (HH:mm)
+  @HiveField(2)
   final String manualWakeTime;
-  
+
   /// 마지막 기기 동기화 시간 (Milliseconds since epoch)
+  @HiveField(3)
   final int? lastDeviceSyncTime;
 
   const SleepConfig({
@@ -171,23 +175,23 @@ class UserProfile extends HiveObject {
   }
 
   // ===== 개인화된 대사율 계산 =====
-  
+
   /// 개인화된 BMR (체질, 근육량 반영)
   double getEnhancedBMR() {
     return EnhancedMetabolismCalculator.calculateEnhancedBMR(this);
   }
-  
+
   /// 개인화된 TDEE (체질, 근육량, 성격 반영)
   double getEnhancedTDEE() {
     return EnhancedMetabolismCalculator.calculateEnhancedTDEE(this);
   }
-  
+
   /// 권장 매크로 비율 (체질 기반)
   /// 반환: {'carbs': 40, 'protein': 30, 'fat': 30} (%)
   Map<String, int> getRecommendedMacros() {
     return EnhancedMetabolismCalculator.getRecommendedMacros(this);
   }
-  
+
   /// TDEE 비교 (기존 vs 개인화)
   Map<String, double> getTDEEComparison() {
     return EnhancedMetabolismCalculator.calculateTDEEComparison(this);
@@ -236,19 +240,19 @@ class UserProfile extends HiveObject {
   /// BodyComposition 객체 반환 (JSON에서 변환)
   BodyComposition? getBodyComposition() {
     if (bodyCompositionData == null) return null;
-    
+
     try {
       return BodyComposition(
         muscleType: bodyCompositionData!['muscleType'] as String? ?? 'medium',
         fatGainPattern: Map<String, int>.from(
-          bodyCompositionData!['fatGainPattern'] as Map? ?? {}
+          bodyCompositionData!['fatGainPattern'] as Map? ?? {},
         ),
         fatLossPattern: Map<String, int>.from(
-          bodyCompositionData!['fatLossPattern'] as Map? ?? {}
+          bodyCompositionData!['fatLossPattern'] as Map? ?? {},
         ),
         currentBodyFat: bodyCompositionData!['currentBodyFat'] != null
             ? Map<String, double>.from(
-                bodyCompositionData!['currentBodyFat'] as Map
+                bodyCompositionData!['currentBodyFat'] as Map,
               )
             : null,
       );
@@ -277,8 +281,8 @@ class UserProfile extends HiveObject {
   BodyShape getBodyShape() {
     if (bodyShape == null) {
       // 성별 기반 기본값
-      return gender.toLowerCase() == 'female' 
-          ? BodyShape.pear 
+      return gender.toLowerCase() == 'female'
+          ? BodyShape.pear
           : BodyShape.rectangle;
     }
     return BodyShape.fromString(bodyShape!);
@@ -298,10 +302,10 @@ class UserProfile extends HiveObject {
   /// 활성화된 식사 목록 반환
   List<Map<String, dynamic>> getEnabledMeals() {
     if (mealPattern == null) return [];
-    
+
     final meals = mealPattern!['meals'] as List?;
     if (meals == null) return [];
-    
+
     return meals
         .where((meal) => meal['enabled'] == true)
         .map((meal) => meal as Map<String, dynamic>)
@@ -356,14 +360,18 @@ class UserProfile extends HiveObject {
       'name': name,
       'age': age,
       'height': height,
-      'weight': initialWeight,
+      'initialWeight': initialWeight, // ✅ 올바른 필드명 사용
       'gender': gender,
       'activityLevel': activityLevel,
       'somatotype': somatotype,
+      'bodyShape': bodyShape,
       'personalityTraits': personalityTraits,
-      'bodyComposition': bodyCompositionData, // Note: using raw data map
+      'bodyCompositionData': bodyCompositionData, // ✅ 올바른 JSON 키 사용
       'mealPattern': mealPattern,
       'alertSensitivity': alertSensitivity,
+      'clothingColors': clothingColors,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'sleepConfig': sleepConfig.toJson(),
     };
   }
@@ -373,20 +381,27 @@ class UserProfile extends HiveObject {
       name: json['name'],
       age: json['age'],
       height: json['height'],
-      initialWeight: json['weight'], // Note: json key is 'weight', field is 'initialWeight'
+      initialWeight: json['initialWeight'] ?? json['weight'], // ✅ 호환성 유지
       gender: json['gender'],
       activityLevel: json['activityLevel'],
       somatotype: json['somatotype'],
+      bodyShape: json['bodyShape'],
       personalityTraits: json['personalityTraits'] != null
           ? Map<String, int>.from(json['personalityTraits'])
           : null,
-      bodyCompositionData: json['bodyComposition'] != null 
-          ? Map<String, dynamic>.from(json['bodyComposition']) 
+      bodyCompositionData: json['bodyCompositionData'] != null
+          ? Map<String, dynamic>.from(json['bodyCompositionData'])
+          : json['bodyComposition'] !=
+                null // ✅ 구버전 호환성
+          ? Map<String, dynamic>.from(json['bodyComposition'])
           : null,
       mealPattern: json['mealPattern'] != null
           ? Map<String, dynamic>.from(json['mealPattern'])
           : null,
       alertSensitivity: json['alertSensitivity'],
+      clothingColors: json['clothingColors'] != null
+          ? Map<String, int>.from(json['clothingColors'])
+          : null,
       sleepConfig: json['sleepConfig'] != null
           ? SleepConfig.fromJson(json['sleepConfig'])
           : const SleepConfig(),

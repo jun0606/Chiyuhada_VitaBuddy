@@ -7,30 +7,31 @@ import 'dart:developer' as developer;
 import 'dart:convert';
 import '../models/user_profile.dart';
 import 'enhanced_metabolism_calculator.dart';
+import 'health_data_service.dart';
 
 /// 백그라운드 칼로리 모니터링 서비스
-/// 
+///
 /// 앱이 꺼져 있을 때도 15~30분 주기로 칼로리 상태를 확인하고
 /// veryLow/low 상태 진입 시 알림을 발송합니다.
 class BackgroundCalorieService {
   static const String taskName = 'calorie_bg_check';
   static const String uniqueName = 'calorie_monitor';
-  
+
   // 헬스 데이터 동기화 태스크
   static const String healthSyncTaskName = 'health_data_sync';
   static const String healthSyncUniqueName = 'health_sync_monitor';
-  
+
   /// Workmanager 초기화 및 등록
   static Future<void> initialize() async {
     await Workmanager().initialize(
       callbackDispatcher,
       // isInDebugMode는 deprecated됨 (0.9.0+)
     );
-    
+
     await registerPeriodicTask();
     await registerHealthSyncTask(); // 헬스 동기화 태스크 등록
   }
-  
+
   /// 주기적 백그라운드 작업 등록 (칼로리 체크)
   static Future<void> registerPeriodicTask({
     Duration frequency = const Duration(minutes: 30),
@@ -49,7 +50,7 @@ class BackgroundCalorieService {
         ),
         existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
       );
-      
+
       developer.log('✅ 칼로리 모니터링 작업 등록 성공: ${frequency.inMinutes}분 주기');
     } catch (e) {
       developer.log('❌ 칼로리 모니터링 작업 등록 실패: $e');
@@ -71,20 +72,20 @@ class BackgroundCalorieService {
         ),
         existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
       );
-      
+
       developer.log('✅ 헬스 동기화 작업 등록 성공: ${frequency.inMinutes}분 주기');
     } catch (e) {
       developer.log('❌ 헬스 동기화 작업 등록 실패: $e');
     }
   }
-  
+
   /// 백그라운드 작업 취소
   static Future<void> cancelPeriodicTask() async {
     await Workmanager().cancelByUniqueName(uniqueName);
     await Workmanager().cancelByUniqueName(healthSyncUniqueName);
     developer.log('⏹️ 백그라운드 작업 취소됨');
   }
-  
+
   /// 모든 백그라운드 작업 취소
   static Future<void> cancelAllTasks() async {
     await Workmanager().cancelAll();
@@ -93,20 +94,20 @@ class BackgroundCalorieService {
 }
 
 /// 백그라운드 콜백 디스패처
-/// 
+///
 /// Workmanager가 호출하는 최상위 함수
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
       developer.log('🔄 백그라운드 작업 시작: $task');
-      
+
       if (task == BackgroundCalorieService.taskName) {
         await _checkCalorieStatus();
       } else if (task == BackgroundCalorieService.healthSyncTaskName) {
         await _syncHealthData();
       }
-      
+
       return Future.value(true);
     } catch (e) {
       developer.log('❌ 백그라운드 작업 실패: $e');
@@ -116,22 +117,32 @@ void callbackDispatcher() {
 }
 
 /// 헬스 데이터 동기화 (백그라운드)
+///
+/// Health Connect/HealthKit에서 운동 데이터를 가져와 로컬 DB에 저장합니다.
+/// 주의: Android Health Connect는 백그라운드 읽기 권한이 제한적일 수 있습니다.
 Future<void> _syncHealthData() async {
   try {
-    // 주의: 백그라운드 격리된 아이솔레이트에서 실행되므로
-    // 필요한 서비스들을 새로 초기화해야 할 수 있음
-    
-    // 여기서는 HealthDataService를 동적으로 import하여 사용하거나
-    // 필요한 로직을 직접 구현해야 함.
-    // HealthDataService가 의존하는 패키지들이 백그라운드에서 잘 동작하는지 확인 필요.
-    
-    // 현재는 로그만 남기고 실제 동기화는 앱 실행 시 수행하도록 유도
-    // (Android Health Connect는 백그라운드 읽기 권한이 제한적일 수 있음)
-    developer.log('🔄 백그라운드 헬스 동기화 시도...');
-    
-    // TODO: 백그라운드 동기화 로직 구현
-    // HealthDataService().syncToDatabase();
-    
+    developer.log('🔄 백그라운드 헬스 동기화 시작...');
+
+    final prefs = await SharedPreferences.getInstance();
+    final healthService = HealthDataService();
+
+    // 권한 확인
+    final hasPermission = await healthService.hasPermissions();
+    if (!hasPermission) {
+      developer.log('⚠️ 헬스 데이터 권한 없음, 동기화 건너뜀');
+      return;
+    }
+
+    // 동기화 실행
+    final syncedCount = await healthService.syncToDatabase();
+
+    // 마지막 동기화 시간 저장
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await prefs.setInt('last_health_sync_time', now);
+    await prefs.setInt('last_health_sync_count', syncedCount);
+
+    developer.log('✅ 백그라운드 헬스 동기화 완료: $syncedCount개 동기화됨');
   } catch (e) {
     developer.log('❌ 백그라운드 헬스 동기화 실패: $e');
   }
@@ -139,36 +150,35 @@ Future<void> _syncHealthData() async {
 
 /// 칼로리 상태 확인 및 알림 발송
 Future<void> _checkCalorieStatus() async {
-
   try {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // 1. 저장된 데이터 읽기
     final intakeCalories = prefs.getDouble('calorie_current_value'); // 섭취량
     final dailyGoal = prefs.getDouble('daily_calorie_goal') ?? 2000.0;
     final lastUpdate = prefs.getInt('calorie_last_update_ms');
-    
+
     // 운동 데이터
     final exerciseBurned = prefs.getDouble('exercise_burned_calories') ?? 0.0;
     final exerciseMinutes = prefs.getInt('exercise_total_minutes') ?? 0;
-    
+
     if (intakeCalories == null || lastUpdate == null) {
       developer.log('⚠️ 칼로리 데이터 없음, 건너뜀');
       return;
     }
-    
+
     // 2. 프로필 데이터 읽기 및 재구성
     final weight = prefs.getDouble('user_weight') ?? 60.0;
     final height = prefs.getDouble('user_height') ?? 170.0;
     final age = prefs.getInt('user_age') ?? 25;
     final gender = prefs.getString('user_gender') ?? 'female';
     final activityLevel = prefs.getString('user_activity_level') ?? 'moderate';
-    
+
     // 수면 설정 읽기
     final sleepMode = prefs.getString('sleep_config_mode') ?? 'hybrid';
     final sleepTime = prefs.getString('sleep_config_sleep_time') ?? '23:00';
     final wakeTime = prefs.getString('sleep_config_wake_time') ?? '07:00';
-    
+
     // 임시 UserProfile 생성 (계산용)
     final profile = UserProfile(
       name: 'User', // 불필요
@@ -183,50 +193,49 @@ Future<void> _checkCalorieStatus() async {
         manualWakeTime: wakeTime,
       ),
     );
-    
+
     // 3. 실시간 소모량 계산 (Phase 16)
     final now = DateTime.now();
-    
+
     // 누적 TDEE (BMR + 활동)
-    double accumulatedTDEE = EnhancedMetabolismCalculator.calculateAccumulatedTDEE(
-      profile, 
-      now
-    );
-    
+    double accumulatedTDEE =
+        EnhancedMetabolismCalculator.calculateAccumulatedTDEE(profile, now);
+
     // 운동 시간 중복 제거 (AppProvider와 동일 로직)
     if (exerciseMinutes > 0) {
-      final double dailyTDEE = EnhancedMetabolismCalculator.calculateEnhancedTDEE(profile);
-      final double avgBurnPerMinute = dailyTDEE / 1440.0; 
+      final double dailyTDEE =
+          EnhancedMetabolismCalculator.calculateEnhancedTDEE(profile);
+      final double avgBurnPerMinute = dailyTDEE / 1440.0;
       accumulatedTDEE -= (avgBurnPerMinute * exerciseMinutes);
     }
-    
+
     // 음수 방지
     accumulatedTDEE = accumulatedTDEE < 0 ? 0 : accumulatedTDEE;
-    
+
     // 4. 순 칼로리 계산
     // Net = 섭취 - (누적TDEE + 운동소모)
     final totalBurned = accumulatedTDEE + exerciseBurned;
     final netCalories = intakeCalories - totalBurned;
-    
+
     // 예상 칼로리 (알림 기준은 섭취량? 아니면 순 칼로리?)
     // 기존 로직은 'estimatedCalories'를 사용하여 알림을 보냈음.
     // 사용자는 "순 칼로리"를 기준으로 상태를 관리하고 싶어함.
     final currentStatusValue = netCalories;
-    
+
     // === 스마트 알림 시스템 (Phase 13) ===
-    
+
     // 1. 사용자 설정 로드
     final alertSensitivity = prefs.getString('alert_sensitivity') ?? 'normal';
-    
+
     // 2. 식사 패턴 로드 및 파싱
     final mealPatternJson = prefs.getString('meal_pattern');
     Map<String, dynamic>? mealPattern;
     int mealsPerDay = 3; // 기본값
-    
+
     if (mealPatternJson != null && mealPatternJson.isNotEmpty) {
       try {
         mealPattern = jsonDecode(mealPatternJson) as Map<String, dynamic>;
-        
+
         // 활성화된 식사 개수 계산
         final meals = mealPattern['meals'] as List?;
         if (meals != null) {
@@ -237,19 +246,19 @@ Future<void> _checkCalorieStatus() async {
         mealPattern = null;
       }
     }
-    
+
     // 3. 동적 임계값 계산
     final dynamicLowThreshold = CalorieCalculator.getDynamicLowThreshold(
       mealsPerDay: mealsPerDay,
       sensitivity: alertSensitivity,
     );
-    
+
     // 4. 다음 식사까지 시간 계산
     final minutesUntilNextMeal = CalorieCalculator.getMinutesUntilNextMeal(
       mealPattern,
       now,
     );
-    
+
     // 5. 칼로리 퍼센트 계산 (목표 대비 순 칼로리)
     // 순 칼로리가 목표의 몇 %인지?
     // 보통 목표는 '섭취 목표'임.
@@ -257,17 +266,19 @@ Future<void> _checkCalorieStatus() async {
     // 아니, '섭취 목표'는 TDEE와 같음.
     // 시간이 지날수록 TDEE가 소모되므로, '남은 목표'가 줄어듦.
     // 여기서 'percentage'는 '현재 보유 에너지 / 하루 필요 에너지' 개념이어야 함.
-    
+
     // 기존 로직: estimatedCalories / dailyGoal
     // estimatedCalories는 '남은 에너지' 개념.
     final percentage = (currentStatusValue / dailyGoal) * 100;
-    
-    developer.log('📊 백그라운드 체크: 순 칼로리 ${currentStatusValue.toInt()} / 목표 ${dailyGoal.toInt()} (${percentage.toInt()}%)');
-    
+
+    developer.log(
+      '📊 백그라운드 체크: 순 칼로리 ${currentStatusValue.toInt()} / 목표 ${dailyGoal.toInt()} (${percentage.toInt()}%)',
+    );
+
     // 6. 스마트 알림 판단
     bool shouldAlert = false;
     CalorieStatus? alertStatus;
-    
+
     // veryLow (20% 이하) - 에너지가 거의 바닥남
     if (percentage <= 20) {
       shouldAlert = true;
@@ -283,19 +294,24 @@ Future<void> _checkCalorieStatus() async {
         alertStatus = CalorieStatus.low;
       }
     }
-    
+
     // 7. 알림 발송 (Hysteresis 적용)
     if (shouldAlert && alertStatus != null) {
-      final lastNotificationTime = prefs.getInt('last_low_calorie_notification') ?? 0;
+      final lastNotificationTime =
+          prefs.getInt('last_low_calorie_notification') ?? 0;
       final nowMs = DateTime.now().millisecondsSinceEpoch;
-      final hoursSinceLastNotification = ((nowMs - lastNotificationTime) / 3600000).floor();
-      
+      final hoursSinceLastNotification =
+          ((nowMs - lastNotificationTime) / 3600000).floor();
+
       if (hoursSinceLastNotification >= 1) {
-        await _sendLowCalorieNotification(alertStatus, currentStatusValue, dailyGoal);
+        await _sendLowCalorieNotification(
+          alertStatus,
+          currentStatusValue,
+          dailyGoal,
+        );
         await prefs.setInt('last_low_calorie_notification', nowMs);
       }
     }
-    
   } catch (e) {
     developer.log('❌ 칼로리 상태 확인 실패: $e');
   }
@@ -308,24 +324,23 @@ Future<void> _sendLowCalorieNotification(
   double goal,
 ) async {
   try {
-    String title;
-    String body;
-    
-    if (status == CalorieStatus.veryLow) {
-      title = '⚠️ 에너지가 매우 부족해요!';
-      body = '현재 ${current.toInt()} kcal (${((current / goal) * 100).toInt()}%). 식사가 필요해요!';
-    } else {
-      title = '💡 에너지가 부족해요';
-      body = '현재 ${current.toInt()} kcal (${((current / goal) * 100).toInt()}%). 간식을 드시는 건 어떨까요?';
-    }
-    
+    final isVeryLow = status == CalorieStatus.veryLow;
+    final percentage = ((current / goal) * 100).toInt();
+
+    final title = NotificationLocalizations.getLowCalorieTitle(isVeryLow);
+    final body = NotificationLocalizations.getLowCalorieBody(
+      current.toInt(),
+      percentage,
+      isVeryLow,
+    );
+
     // 로컬 알림 발송
     await NotificationService().showNotification(
       id: 9999, // 백그라운드 알림 전용 ID
       title: title,
       body: body,
     );
-    
+
     developer.log('📬 알림 발송: $title');
   } catch (e) {
     developer.log('❌ 알림 발송 실패: $e');

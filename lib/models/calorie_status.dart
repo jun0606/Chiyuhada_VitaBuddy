@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import '../utils/meal_pattern_calorie_guide.dart';
+import '../l10n/app_localizations.dart';
 
 /// 칼로리 상태 (7단계)
-/// 
+///
 /// 일일 목표 칼로리 대비 현재 섭취량 기준
 enum CalorieStatus {
   /// 매우 낮음 (0-20%)
   veryLow,
-  
+
   /// 낮음 (21-40%)
   low,
-  
+
   /// 적정 하한 (41-60%)
   belowIdeal,
-  
+
   /// 이상적 (61-80%)
   ideal,
-  
+
   /// 약간 높음 (81-95%)
   slightlyHigh,
-  
+
   /// 높음 (96-110%)
   high,
-  
+
   /// 초과 (111%+)
   exceeded,
 }
@@ -47,8 +48,30 @@ extension CalorieStatusExtension on CalorieStatus {
         return const Color(0xFFB71C1C); // Very Dark Red
     }
   }
-  
-  /// 상태별 메시지
+
+  /// 상태별 메시지 (현지화 키)
+  String getLocalizedMessage(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (this) {
+      case CalorieStatus.veryLow:
+        return l10n.calorieStatusVeryLow;
+      case CalorieStatus.low:
+        return l10n.calorieStatusLow;
+      case CalorieStatus.belowIdeal:
+        return l10n.calorieStatusBelowIdeal;
+      case CalorieStatus.ideal:
+        return l10n.calorieStatusIdeal;
+      case CalorieStatus.slightlyHigh:
+        return l10n.calorieStatusSlightlyHigh;
+      case CalorieStatus.high:
+        return l10n.calorieStatusHigh;
+      case CalorieStatus.exceeded:
+        return l10n.calorieStatusExceeded;
+    }
+  }
+
+  /// 상태별 메시지 (하위 호환성 유지 - 한국어)
+  @Deprecated('Use getLocalizedMessage(context) instead')
   String get message {
     switch (this) {
       case CalorieStatus.veryLow:
@@ -67,7 +90,7 @@ extension CalorieStatusExtension on CalorieStatus {
         return '목표 초과! 운동 필요해요!';
     }
   }
-  
+
   /// 상태별 아이콘
   IconData get icon {
     switch (this) {
@@ -85,7 +108,7 @@ extension CalorieStatusExtension on CalorieStatus {
         return Icons.error;
     }
   }
-  
+
   /// 백분율 범위
   String get percentageRange {
     switch (this) {
@@ -115,7 +138,7 @@ CalorieStatus getCalorieStatus({
   DateTime? currentTime,
 }) {
   if (goal <= 0) return CalorieStatus.ideal;
-  
+
   // 식사 패턴이 있으면 권장 칼로리 기준으로 판단
   if (mealPattern != null) {
     try {
@@ -124,8 +147,9 @@ CalorieStatus getCalorieStatus({
         dailyGoal: goal,
         currentIntake: current,
         currentTime: currentTime,
+        l10n: null, // l10n 없이 호출 (기본값 사용)
       );
-      
+
       // 권장 칼로리 대비 현재 섭취량 비율 계산
       double recommendedPercentage;
       if (guidance.recommendedCalories > 0) {
@@ -134,13 +158,13 @@ CalorieStatus getCalorieStatus({
         // 권장량이 0일 때 (아직 첫 식사 전)
         if (current > 0) {
           // 섭취량이 있으면 무한대 초과 -> 매우 큰 값으로 설정 (Exceeded 유도)
-          recommendedPercentage = 999.0; 
+          recommendedPercentage = 999.0;
         } else {
           // 둘 다 0이면 적절함
           recommendedPercentage = 100.0; // Ideal 범위
         }
       }
-      
+
       // 권장 칼로리 기준으로 상태 판단
       if (recommendedPercentage <= 50) return CalorieStatus.veryLow;
       if (recommendedPercentage <= 75) return CalorieStatus.low;
@@ -154,10 +178,10 @@ CalorieStatus getCalorieStatus({
       // MealPatternCalorieGuide 오류 시 기본 로직으로 fallback
     }
   }
-  
+
   // 기존 로직 (일일 목표 기준)
   final percentage = (current / goal) * 100;
-  
+
   if (percentage <= 20) return CalorieStatus.veryLow;
   if (percentage <= 40) return CalorieStatus.low;
   if (percentage <= 60) return CalorieStatus.belowIdeal;

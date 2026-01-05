@@ -3,6 +3,7 @@ import 'package:chiyuhada_vita_buddy/models/workout_data.dart';
 import 'package:chiyuhada_vita_buddy/services/database_service.dart';
 import 'package:provider/provider.dart';
 import 'package:chiyuhada_vita_buddy/providers/app_provider.dart';
+import 'package:chiyuhada_vita_buddy/l10n/app_localizations.dart';
 
 /// 운동 수동 입력 다이얼로그
 class ExerciseInputDialog extends StatefulWidget {
@@ -45,10 +46,12 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
 
   /// 운동 저장
   Future<void> _saveExercise() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_calculatedCalories == null || _calculatedCalories! <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('칼로리 계산 오류가 발생했습니다'),
+        SnackBar(
+          content: Text(l10n.calorieCalcError),
           backgroundColor: Colors.red,
         ),
       );
@@ -65,10 +68,12 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
 
       if (mounted) {
         Navigator.of(context).pop(true); // 성공 시 true 반환
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_getTypeName(_selectedType)} 운동이 기록되었습니다'),
+            content: Text(
+              l10n.workoutSaved(_getTypeName(context, _selectedType)),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -77,7 +82,7 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('저장 실패: $e'),
+            content: Text(l10n.saveError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -87,21 +92,28 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('운동 기록'),
+      title: Text(l10n.exerciseRecord),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 운동 종류 선택
-            const Text('운동 종류', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              l10n.workoutTypeLabel,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<WorkoutType>(
               initialValue: _selectedType,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               items: WorkoutType.values.map((type) {
                 return DropdownMenuItem(
@@ -110,7 +122,7 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
                     children: [
                       _getTypeIcon(type),
                       const SizedBox(width: 8),
-                      Text(_getTypeName(type)),
+                      Text(_getTypeName(context, type)),
                     ],
                   ),
                 );
@@ -124,11 +136,14 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
                 }
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // 운동 시간
-            const Text('운동 시간 (분)', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              l10n.durationLabel,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -138,7 +153,7 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
                     min: 5,
                     max: 180,
                     divisions: 35,
-                    label: '$_duration분',
+                    label: '$_duration${l10n.minutesUnit}',
                     onChanged: (value) {
                       setState(() {
                         _duration = value.toInt();
@@ -150,24 +165,30 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
                 SizedBox(
                   width: 60,
                   child: Text(
-                    '$_duration분',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    '$_duration${l10n.minutesUnit}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // 강도 선택
-            const Text('운동 강도', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              l10n.intensityLabel,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             SegmentedButton<double>(
-              segments: const [
-                ButtonSegment(value: 0.8, label: Text('낮음')),
-                ButtonSegment(value: 1.0, label: Text('보통')),
-                ButtonSegment(value: 1.2, label: Text('높음')),
+              segments: [
+                ButtonSegment(value: 0.8, label: Text(l10n.intensityLow)),
+                ButtonSegment(value: 1.0, label: Text(l10n.intensityMedium)),
+                ButtonSegment(value: 1.2, label: Text(l10n.intensityHigh)),
               ],
               selected: {_intensity},
               onSelectionChanged: (Set<double> newSelection) {
@@ -177,9 +198,9 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
                 _calculateCalories();
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // 예상 칼로리
             Container(
               padding: const EdgeInsets.all(12),
@@ -191,9 +212,9 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('예상 칼로리 소모량'),
+                  Text(l10n.calcCaloriesLabel),
                   Text(
-                    '${_calculatedCalories?.toInt() ?? 0} kcal',
+                    '${_calculatedCalories?.toInt() ?? 0} ${l10n.caloriesUnit}',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -209,14 +230,14 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _saveExercise,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFFB74D),
           ),
-          child: const Text('저장'),
+          child: Text(l10n.save),
         ),
       ],
     );
@@ -272,6 +293,50 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
         icon = Icons.sports_soccer;
         color = Colors.green[700]!;
         break;
+      case WorkoutType.aerobics:
+        icon = Icons.accessibility_new;
+        color = Colors.teal;
+        break;
+      case WorkoutType.badminton:
+        icon = Icons.sports_baseball;
+        color = Colors.indigo;
+        break;
+      case WorkoutType.baseball:
+        icon = Icons.sports_baseball;
+        color = Colors.amber;
+        break;
+      case WorkoutType.boxing:
+        icon = Icons.sports_mma;
+        color = Colors.red[800]!;
+        break;
+      case WorkoutType.golf:
+        icon = Icons.golf_course;
+        color = Colors.green[600]!;
+        break;
+      case WorkoutType.pilates:
+        icon = Icons.accessibility;
+        color = Colors.pink[300]!;
+        break;
+      case WorkoutType.tableTennis:
+        icon = Icons.table_chart;
+        color = Colors.blue[800]!;
+        break;
+      case WorkoutType.volleyball:
+        icon = Icons.sports_volleyball;
+        color = Colors.orange[600]!;
+        break;
+      case WorkoutType.elliptical:
+        icon = Icons.fitness_center;
+        color = Colors.purple[400]!;
+        break;
+      case WorkoutType.rowing:
+        icon = Icons.rowing;
+        color = Colors.teal[700]!;
+        break;
+      case WorkoutType.stairClimbing:
+        icon = Icons.stairs;
+        color = Colors.grey[700]!;
+        break;
       case WorkoutType.other:
         icon = Icons.sports;
         color = Colors.grey;
@@ -282,32 +347,55 @@ class _ExerciseInputDialogState extends State<ExerciseInputDialog> {
   }
 
   /// 운동 종류 한글 이름
-  String _getTypeName(WorkoutType type) {
+  String _getTypeName(BuildContext context, WorkoutType type) {
+    final l10n = AppLocalizations.of(context)!;
     switch (type) {
       case WorkoutType.walking:
-        return '걷기';
+        return l10n.walkingActivity;
       case WorkoutType.running:
-        return '달리기';
+        return l10n.runningActivity;
       case WorkoutType.cycling:
-        return '자전거';
+        return l10n.cyclingActivity;
       case WorkoutType.swimming:
-        return '수영';
+        return l10n.swimmingActivity;
       case WorkoutType.weightTraining:
-        return '근력 운동';
+        return l10n.weightTrainingActivity;
       case WorkoutType.yoga:
-        return '요가';
+        return l10n.yogaActivity;
       case WorkoutType.dancing:
-        return '댄스';
+        return l10n.dancingActivity;
       case WorkoutType.hiking:
-        return '등산';
+        return l10n.hikingActivity;
       case WorkoutType.tennis:
-        return '테니스';
+        return l10n.tennisActivity;
       case WorkoutType.basketball:
-        return '농구';
+        return l10n.basketballActivity;
       case WorkoutType.soccer:
-        return '축구';
+        return l10n.soccerActivity;
+      case WorkoutType.aerobics:
+        return l10n.aerobicsActivity;
+      case WorkoutType.badminton:
+        return l10n.badmintonActivity;
+      case WorkoutType.baseball:
+        return l10n.baseballActivity;
+      case WorkoutType.boxing:
+        return l10n.boxingActivity;
+      case WorkoutType.golf:
+        return l10n.golfActivity;
+      case WorkoutType.pilates:
+        return l10n.pilatesActivity;
+      case WorkoutType.tableTennis:
+        return l10n.tableTennisActivity;
+      case WorkoutType.volleyball:
+        return l10n.volleyballActivity;
+      case WorkoutType.elliptical:
+        return l10n.ellipticalActivity;
+      case WorkoutType.rowing:
+        return l10n.rowingActivity;
+      case WorkoutType.stairClimbing:
+        return l10n.stairClimbingActivity;
       case WorkoutType.other:
-        return '기타 운동';
+        return l10n.otherActivity;
     }
   }
 }

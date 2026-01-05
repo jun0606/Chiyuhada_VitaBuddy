@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.chiyuhada_vita_buddy"
+    namespace = "com.chiyuhada.vitabuddy"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,25 +22,37 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.chiyuhada_vita_buddy"
+        applicationId = "com.chiyuhada.vitabuddy"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 2  // 첫 출시 버전
+        versionName = "1.0.1"  // 첫 출시 버전 이름
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("upload-keystore.jks")
+            storePassword = "android"
+            keyAlias = "upload"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
 
 dependencies {
+    // Health Connect SDK
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha11")
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 

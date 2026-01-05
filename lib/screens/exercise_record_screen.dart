@@ -5,10 +5,11 @@ import 'package:chiyuhada_vita_buddy/widgets/exercise_card.dart';
 import 'package:chiyuhada_vita_buddy/widgets/exercise_input_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:chiyuhada_vita_buddy/providers/app_provider.dart';
+import 'package:chiyuhada_vita_buddy/l10n/app_localizations.dart';
 import 'dart:developer' as developer;
 
 /// 운동 기록 화면
-/// 
+///
 /// Health Connect/HealthKit 데이터 동기화 및 수동 입력 지원
 class ExerciseRecordScreen extends StatefulWidget {
   const ExerciseRecordScreen({super.key});
@@ -23,7 +24,7 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
   final DatabaseService _dbService = DatabaseService();
 
   late TabController _tabController;
-  
+
   // 오늘의 운동 요약 데이터
   int _todaySteps = 0;
   double _todayCalories = 0.0;
@@ -32,11 +33,21 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
   bool _isSyncing = false;
   DateTime? _lastSyncTime;
 
+  // UI 강제 새로고침용 키
+  Key _autoRecordsKey = UniqueKey();
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadTodayData();
+
+    // 운동 기록 화면 진입 시 자동 동기화 (실시간성 향상)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _autoSyncOnScreenEntry();
+      }
+    });
   }
 
   @override
@@ -53,7 +64,9 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
       // 데이터베이스에서 오늘 운동 기록 가져오기
       final today = DateTime.now().toIso8601String().split('T')[0];
       final exercises = await _dbService.getExerciseRecordsForDate(today);
-      final burnedCalories = await _dbService.getTotalBurnedCaloriesForDate(today);
+      final burnedCalories = await _dbService.getTotalBurnedCaloriesForDate(
+        today,
+      );
 
       setState(() {
         _todayWorkoutCount = exercises.length;
@@ -75,19 +88,29 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
 
   /// Health Connect/HealthKit 동기화
   Future<void> _syncHealthData() async {
+    developer.log('🚀 동기화 시작');
     setState(() => _isSyncing = true);
 
     try {
       // 권한 확인
+      developer.log('🔐 권한 확인 시작');
       final hasPermission = await _healthService.hasPermissions();
+      developer.log('✅ 권한 상태: $hasPermission');
+
       if (!hasPermission) {
         // 권한 요청
+        developer.log('🔑 권한 요청 시작');
         final granted = await _healthService.requestPermissions();
+        developer.log('✅ 권한 요청 결과: $granted');
+
         if (!granted) {
+          developer.log('⚠️ 권한 거부됨');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('헬스 데이터 권한이 필요합니다'),
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.healthPermissionWarning,
+                ),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -98,37 +121,52 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
       }
 
       // 동기화 실행
+      developer.log('🔄 syncToDatabase() 호출 시작');
       final count = await _healthService.syncToDatabase();
-      
+      developer.log('✅ syncToDatabase() 완료: $count개 저장됨');
+
       setState(() {
         _lastSyncTime = DateTime.now();
         _isSyncing = false;
       });
 
       // 데이터 새로고침
+      developer.log('🔄 UI 데이터 새로고침 시작');
       await _loadTodayData();
-      
+
+      // FutureBuilder 강제 리빌드 (데이터 변경 감지용)
+      setState(() {
+        _autoRecordsKey = UniqueKey();
+      });
+      developer.log('✅ UI 데이터 새로고침 및 강제 리빌드 완료');
+
       // AppProvider 데이터 갱신 (홈 화면 게이지 업데이트용)
       if (mounted) {
         await context.read<AppProvider>().refreshData();
+        developer.log('✅ AppProvider 데이터 갱신 완료');
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ $count개의 운동 데이터 동기화 완료'),
+            content: Text(AppLocalizations.of(context)!.syncSuccess(count)),
             backgroundColor: Colors.green,
           ),
         );
       }
-    } catch (e) {
+
+      developer.log('🎉 동기화 프로세스 완료');
+    } catch (e, stackTrace) {
       developer.log('❌ 동기화 실패: $e');
+      developer.log('📋 스택 트레이스: $stackTrace');
       setState(() => _isSyncing = false);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('동기화 중 오류가 발생했습니다: $e'),
+            content: Text(
+              AppLocalizations.of(context)!.syncError(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -138,9 +176,10 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('운동 기록'),
+        title: Text(l10n.exerciseRecord),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: Container(
@@ -157,31 +196,30 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.sync), text: '자동 기록'),
-            Tab(icon: Icon(Icons.edit), text: '수동 기록'),
+          tabs: [
+            Tab(icon: const Icon(Icons.sync), text: l10n.autoRecord),
+            Tab(icon: const Icon(Icons.edit), text: l10n.manualRecord),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // 오늘의 운동 요약 헤더
-          _buildSummaryHeader(),
-          
-          // 동기화 버튼
-          _buildSyncButton(),
-          
-          // 탭 내용
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildAutoRecordsTab(),
-                _buildManualRecordsTab(),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 오늘의 운동 요약 헤더
+            _buildSummaryHeader(),
+
+            // 동기화 버튼
+            _buildSyncButton(),
+
+            // 탭 내용
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [_buildAutoRecordsTab(), _buildManualRecordsTab()],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -190,7 +228,7 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
             context: context,
             builder: (context) => const ExerciseInputDialog(),
           );
-          
+
           // 저장 성공 시 데이터 새로고침
           if (result == true) {
             _loadTodayData();
@@ -218,19 +256,19 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
               children: [
                 _buildSummaryItem(
                   icon: Icons.local_fire_department,
-                  label: '소모 칼로리',
+                  label: AppLocalizations.of(context)!.caloriesBurned,
                   value: '${_todayCalories.toInt()} kcal',
                   color: Colors.deepOrange,
                 ),
                 _buildSummaryItem(
                   icon: Icons.directions_run,
-                  label: '운동 횟수',
-                  value: '$_todayWorkoutCount회',
+                  label: AppLocalizations.of(context)!.workoutCount,
+                  value: '$_todayWorkoutCount',
                   color: Colors.blue,
                 ),
                 _buildSummaryItem(
                   icon: Icons.directions_walk,
-                  label: '걸음 수',
+                  label: AppLocalizations.of(context)!.steps,
                   value: '$_todaySteps',
                   color: Colors.green,
                 ),
@@ -257,13 +295,7 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
             color: color,
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
@@ -281,7 +313,11 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.sync),
-        label: Text(_isSyncing ? '동기화 중...' : 'Health 데이터 동기화'),
+        label: Text(
+          _isSyncing
+              ? AppLocalizations.of(context)!.syncing
+              : AppLocalizations.of(context)!.syncHealthData,
+        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFFB74D),
           minimumSize: const Size(double.infinity, 48),
@@ -293,6 +329,7 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
   /// 자동 기록 탭
   Widget _buildAutoRecordsTab() {
     return FutureBuilder<List<Map<String, dynamic>>>(
+      key: _autoRecordsKey,
       future: _loadAutoRecords(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -301,16 +338,20 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('데이터 로드 실패: ${snapshot.error}'),
+            child: Text(
+              AppLocalizations.of(
+                context,
+              )!.dataLoadError(snapshot.error.toString()),
+            ),
           );
         }
 
         final records = snapshot.data ?? [];
-        
+
         if (records.isEmpty) {
-          return const EmptyExerciseState(
-            message: '자동 기록된 운동이 없습니다',
-            subtitle: 'Health 데이터 동기화 버튼을 눌러\n스마트폰과 웨어러블의 운동 데이터를 불러오세요',
+          return EmptyExerciseState(
+            message: AppLocalizations.of(context)!.noAutoRecords,
+            subtitle: AppLocalizations.of(context)!.noAutoRecordsSubtitle,
             icon: Icons.sync,
           );
         }
@@ -336,16 +377,20 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('데이터 로드 실패: ${snapshot.error}'),
+            child: Text(
+              AppLocalizations.of(
+                context,
+              )!.dataLoadError(snapshot.error.toString()),
+            ),
           );
         }
 
         final records = snapshot.data ?? [];
-        
+
         if (records.isEmpty) {
-          return const EmptyExerciseState(
-            message: '수동 기록된 운동이 없습니다',
-            subtitle: '오른쪽 하단의 + 버튼을 눌러\n운동을 직접 기록해보세요',
+          return EmptyExerciseState(
+            message: AppLocalizations.of(context)!.noManualRecords,
+            subtitle: AppLocalizations.of(context)!.noManualRecordsSubtitle,
             icon: Icons.add_circle_outline,
           );
         }
@@ -364,23 +409,98 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
   Future<List<Map<String, dynamic>>> _loadAutoRecords() async {
     final today = DateTime.now().toIso8601String().split('T')[0];
     final allRecords = await _dbService.getExerciseRecordsForDate(today);
-    
+
+    developer.log('📊 오늘 전체 운동 기록: ${allRecords.length}개');
+    for (final record in allRecords) {
+      developer.log(
+        '🔍 기록 상세: id=${record['id']}, source=${record['source']}, exercise_name=${record['exercise_name']}',
+      );
+    }
+
     // source가 'manual'이 아닌 것만 필터링
-    return allRecords.where((record) {
+    final autoRecords = allRecords.where((record) {
       final source = record['source'] ?? 'manual';
-      return source.toLowerCase() != 'manual';
+      final isAuto = source.toLowerCase() != 'manual';
+      developer.log('🔍 필터링: source="$source" -> isAuto=$isAuto');
+      return isAuto;
     }).toList();
+
+    developer.log('✅ 자동 기록 필터링 결과: ${autoRecords.length}개');
+    return autoRecords;
   }
 
   /// 수동 기록 데이터 로드
   Future<List<Map<String, dynamic>>> _loadManualRecords() async {
     final today = DateTime.now().toIso8601String().split('T')[0];
     final allRecords = await _dbService.getExerciseRecordsForDate(today);
-    
+
     // source가 'manual'인 것만 필터링
     return allRecords.where((record) {
       final source = record['source'] ?? 'manual';
       return source.toLowerCase() == 'manual';
     }).toList();
+  }
+
+  /// 운동 기록 화면 진입 시 자동 동기화
+  Future<void> _autoSyncOnScreenEntry() async {
+    try {
+      developer.log('🏃 운동 기록 화면 진입 - 자동 동기화 확인');
+
+      // 마지막 동기화 시간 확인 (5분 이내에 동기화했으면 건너뜀)
+      final shouldSkipSync =
+          _lastSyncTime != null &&
+          DateTime.now().difference(_lastSyncTime!).inMinutes < 5;
+
+      if (shouldSkipSync) {
+        developer.log('⏭️ 최근 동기화(5분 이내)로 자동 동기화 건너뜀');
+        return;
+      }
+
+      // 권한 확인 (권한 없으면 조용히 건너뜀)
+      final hasPermission = await _healthService.hasPermissions();
+      if (!hasPermission) {
+        developer.log('ℹ️ 헬스 권한 없음 - 자동 동기화 건너뜀');
+        return;
+      }
+
+      developer.log('🔄 운동 기록 화면 자동 동기화 시작');
+
+      // 자동 동기화 실행 (UI 차단 없이 백그라운드)
+      final count = await _healthService.syncToDatabase();
+
+      if (count > 0) {
+        developer.log('✅ 자동 동기화 완료: $count개 새 기록');
+        setState(() {
+          _lastSyncTime = DateTime.now();
+        });
+
+        // 데이터 새로고침
+        await _loadTodayData();
+        setState(() {
+          _autoRecordsKey = UniqueKey(); // FutureBuilder 강제 리빌드
+        });
+
+        // AppProvider 데이터 갱신 (홈 화면 게이지 업데이트)
+        if (mounted) {
+          await context.read<AppProvider>().refreshData();
+        }
+
+        // 사용자에게 자동 동기화 완료 알림 (옵션)
+        if (mounted && count > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('자동 동기화 완료: ${count}개의 운동 기록을 추가했습니다'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: Colors.green.shade600,
+            ),
+          );
+        }
+      } else {
+        developer.log('ℹ️ 자동 동기화: 새로운 기록 없음');
+      }
+    } catch (e) {
+      developer.log('⚠️ 운동 기록 화면 자동 동기화 실패: $e');
+      // 자동 동기화 실패는 사용자에게 알리지 않음 (조용히 실패)
+    }
   }
 }

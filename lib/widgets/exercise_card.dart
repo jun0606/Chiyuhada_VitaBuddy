@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// 운동 기록 카드 위젯
 class ExerciseCard extends StatelessWidget {
@@ -8,11 +9,19 @@ class ExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final exerciseName = exercise['exercise_name'] ?? '운동';
+    final l10n = AppLocalizations.of(context)!;
+    final exerciseName = exercise['exercise_type'] ?? exercise['exercise_name'] ?? '운동';
+    final customName = exercise['custom_name'];
     final durationMinutes = exercise['duration_minutes'] ?? 0;
     final caloriesBurned = (exercise['calories_burned'] ?? 0.0).toDouble();
     final source = exercise['source'] ?? 'manual';
+    final packageName = exercise['package_name'];
     final time = exercise['time'] ?? '';
+
+    // 동적 이름 우선 순위: custom_name > 번역된 exercise_type
+    final displayTitle = (customName != null && customName.toString().isNotEmpty)
+        ? customName.toString()
+        : _getDisplayName(context, exerciseName.toString());
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -20,28 +29,24 @@ class ExerciseCard extends StatelessWidget {
       child: ListTile(
         leading: _buildExerciseIcon(exerciseName),
         title: Text(
-          _getDisplayName(exerciseName),
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          displayTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text('$durationMinutes분 • ${caloriesBurned.toInt()} kcal'),
+            Text(
+              '$durationMinutes${l10n.minutesUnit} • ${caloriesBurned.toInt()} ${l10n.caloriesUnit}',
+            ),
             const SizedBox(height: 4),
-            _buildSourceBadge(source),
+            _buildSourceBadge(context, source, packageName),
           ],
         ),
         trailing: time.isNotEmpty
             ? Text(
                 _formatTime(time),
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               )
             : null,
       ),
@@ -110,26 +115,44 @@ class ExerciseCard extends StatelessWidget {
   }
 
   /// 출처 뱃지
-  Widget _buildSourceBadge(String source) {
+  Widget _buildSourceBadge(BuildContext context, String source, [String? packageName]) {
     String label;
     IconData icon;
     Color color;
+    final l10n = AppLocalizations.of(context)!;
 
     switch (source.toLowerCase()) {
       case 'healthconnect':
-        label = 'Health Connect';
+        label = l10n.sourceHealthConnect;
         icon = Icons.phone_android;
         color = Colors.green;
         break;
       case 'healthkit':
-        label = 'HealthKit';
+        label = l10n.sourceHealthKit;
         icon = Icons.apple;
         color = Colors.blue;
         break;
       default:
-        label = '수동 입력';
+        label = l10n.sourceManual;
         icon = Icons.edit;
         color = Colors.orange;
+    }
+
+    // 패키지 명에서 앱 명칭 추출 시도 (예: com.sec.android.app.shealth -> Samsung Health)
+    if (packageName != null && packageName.isNotEmpty && source.toLowerCase() == 'healthconnect') {
+      if (packageName.contains('shealth')) {
+        label = 'Samsung Health';
+      } else if (packageName.contains('fitness')) {
+        label = 'Google Fit';
+      } else if (packageName.contains('strava')) {
+        label = 'Strava';
+      } else if (packageName.contains('garmin')) {
+        label = 'Garmin';
+      } else {
+        // 패키지 명의 마지막 부분을 대문자로 표시
+        label = packageName.split('.').last;
+        label = label[0].toUpperCase() + label.substring(1);
+      }
     }
 
     return Row(
@@ -148,43 +171,50 @@ class ExerciseCard extends StatelessWidget {
     );
   }
 
-  /// 운동 이름 한글화
-  String _getDisplayName(String exerciseName) {
+  /// 운동 이름 한글화 (이제 다국어 지원)
+  String _getDisplayName(BuildContext context, String exerciseName) {
+    final l10n = AppLocalizations.of(context)!;
     switch (exerciseName.toLowerCase()) {
       case 'walking':
-        return '걷기';
+        return l10n.walkingActivity;
       case 'running':
-        return '달리기';
+        return l10n.runningActivity;
       case 'cycling':
-        return '자전거';
+        return l10n.cyclingActivity;
       case 'swimming':
-        return '수영';
+        return l10n.swimmingActivity;
       case 'weighttraining':
-        return '근력 운동';
+        return l10n.weightTrainingActivity;
       case 'yoga':
-        return '요가';
+        return l10n.yogaActivity;
       case 'dancing':
-        return '댄스';
+        return l10n.dancingActivity;
       case 'hiking':
-        return '등산';
+        return l10n.hikingActivity;
       case 'tennis':
-        return '테니스';
+        return l10n.tennisActivity;
       case 'basketball':
-        return '농구';
+        return l10n.basketballActivity;
       case 'soccer':
-        return '축구';
+        return l10n.soccerActivity;
       default:
-        return exerciseName;
+        return l10n.otherActivity;
     }
   }
 
   /// 시간 포맷 (HH:MM)
-  String _formatTime(String isoTime) {
+  String _formatTime(String timeStr) {
+    if (timeStr.isEmpty) return '';
+    
     try {
-      final dateTime = DateTime.parse(isoTime);
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      if (timeStr.contains('T')) {
+        final dateTime = DateTime.parse(timeStr);
+        return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      }
+      // 이미 HH:mm 형식인 경우 (예: "14:30")
+      return timeStr;
     } catch (e) {
-      return '';
+      return timeStr;
     }
   }
 }
@@ -210,11 +240,7 @@ class EmptyExerciseState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 80,
-              color: Colors.grey[300],
-            ),
+            Icon(icon, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
               message,
@@ -230,10 +256,7 @@ class EmptyExerciseState extends StatelessWidget {
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               ),
             ],
           ],

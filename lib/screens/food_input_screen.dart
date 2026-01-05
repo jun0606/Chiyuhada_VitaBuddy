@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/database_service.dart';
 import '../models/food_input_mode.dart';
+import '../l10n/app_localizations.dart';
 
 class FoodInputScreen extends StatefulWidget {
   const FoodInputScreen({super.key});
@@ -16,11 +17,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
   final _quantityController = TextEditingController(text: '1');
   final _customFoodController = TextEditingController();
   final _customCaloriesController = TextEditingController();
-  
+
   // 전체 칼로리 모드용
   final _totalCalorieFoodNameController = TextEditingController();
   final _totalCalorieValueController = TextEditingController();
-  
+
   // 1회 제공량 모드용
   final _servingFoodNameController = TextEditingController();
   final _servingSizeController = TextEditingController();
@@ -31,19 +32,19 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
   List<Map<String, dynamic>> _filteredFoods = [];
   Map<String, dynamic>? _selectedFood;
   bool _isLoading = false;
-  String _selectedCategory = '전체';
-  
+  String _selectedCategory = 'catTotal';
+
   // 입력 모드
   FoodInputMode _inputMode = FoodInputMode.totalCalories;
-  
+
   // 최근 음식 & 즐겨찾기
   List<Map<String, dynamic>> _recentFoods = [];
   List<Map<String, dynamic>> _favorites = [];
   Set<int> _favoriteFoodIds = {}; // 빠른 조회용
-  
+
   // 소스 탭
   int _selectedSourceTab = 0; // 0: 최근, 1: 즐겨찾기, 2: 검색, 3: 직접
-  
+
   // 직접 추가 시 선택된 카테고리
   String _selectedCustomCategory = '기타';
 
@@ -62,6 +63,41 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     '음료',
     '기타',
   ];
+
+  String _getLocalizedCategory(BuildContext context, String category) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (category) {
+      case '전체':
+        return l10n.catTotal;
+      case '과일':
+        return l10n.catFruit;
+      case '주식':
+        return l10n.catStaple;
+      case '국':
+        return l10n.catSoup;
+      case '육류':
+        return l10n.catMeat;
+      case '어류':
+        return l10n.catFish;
+      case '반찬':
+        return l10n.catSide;
+      case '야채':
+        return l10n.catVegetable;
+      case '유제품':
+        return l10n.catDairy;
+      case '제과':
+        return l10n.catBakery;
+      case '과자':
+        return l10n.catSnack;
+      case '음료':
+        return l10n.catBeverage;
+      case '기타':
+        return l10n.catEtc;
+      default:
+        // DB에서 가져온 추가 카테고리가 있다면 그대로 표시
+        return category;
+    }
+  }
 
   @override
   void initState() {
@@ -92,9 +128,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       _foods = await DatabaseService().getFoods();
       _filterFoods();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('음식 데이터를 불러오는데 실패했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.loadFoodsFailed}: $e'),
+        ),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -105,12 +143,12 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       final recent = await DatabaseService().getRecentFoods(days: 7);
       final favs = await DatabaseService().getFavorites();
       final cats = await DatabaseService().getUniqueCategories();
-      
+
       setState(() {
         _recentFoods = recent;
         _favorites = favs;
         _favoriteFoodIds = favs.map((f) => f['id'] as int).toSet();
-        
+
         // 기본 카테고리와 DB 카테고리 병합 (중복 제거)
         final Set<String> allCats = {..._categories, ...cats};
         _categories.clear();
@@ -125,7 +163,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
   void _filterFoods() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      if (_selectedCategory == '전체') {
+      if (_selectedCategory == 'catTotal') {
         _filteredFoods = _foods.where((food) {
           return food['name'].toLowerCase().contains(query);
         }).toList();
@@ -150,9 +188,10 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
     final quantity = double.tryParse(_quantityController.text);
     if (quantity == null || quantity <= 0) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('올바른 수량을 입력해주세요')));
+      ).showSnackBar(SnackBar(content: Text(l10n.invalidQuantity)));
       return;
     }
 
@@ -161,7 +200,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
     try {
       print('🔍 음식 추가 시도: ${_selectedFood!['name']}, $totalCalories kcal');
-      
+
       await Provider.of<AppProvider>(
         context,
         listen: false,
@@ -169,10 +208,19 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
       print('✅ 음식 추가 완료');
 
+      // 즉시 아바타 반응 트리거
+      if (context.mounted) {
+        Provider.of<AppProvider>(
+          context,
+          listen: false,
+        ).triggerFoodAddedCeremony();
+      }
+
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${_selectedFood!['name']} ${totalCalories}kcal 추가되었습니다',
+            '${_selectedFood!['name']} ${totalCalories}kcal ${l10n.foodAdded}',
           ),
         ),
       );
@@ -189,9 +237,10 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       }
     } catch (e) {
       print('❌ 음식 추가 실패: $e');
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('음식 추가에 실패했습니다: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.foodAddFailed}: $e')));
     }
   }
 
@@ -200,21 +249,24 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     final caloriesText = _customCaloriesController.text.trim();
 
     if (foodName.isEmpty || caloriesText.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('음식 이름과 칼로리를 입력해주세요')));
+      ).showSnackBar(SnackBar(content: Text(l10n.enterFoodNameAndCalories)));
       return;
     }
 
     final calories = double.tryParse(caloriesText);
     if (calories == null || calories <= 0) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('올바른 칼로리를 입력해주세요')));
+      ).showSnackBar(SnackBar(content: Text(l10n.enterValidCalories)));
       return;
     }
 
     try {
+      final l10n = AppLocalizations.of(context)!;
       final foodId = await DatabaseService().addFood(foodName, calories);
       await Provider.of<AppProvider>(
         context,
@@ -222,7 +274,9 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       ).addFoodIntake(foodId, 1.0, calories);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$foodName ${calories.toInt()}kcal 추가되었습니다')),
+        SnackBar(
+          content: Text('$foodName ${calories.toInt()}kcal ${l10n.foodAdded}'),
+        ),
       );
 
       // 입력 필드 초기화
@@ -230,9 +284,10 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       _customCaloriesController.clear();
       _loadFoods(); // 목록 새로고침
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('사용자 음식 추가에 실패했습니다: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.userFoodAddFailed}: $e')));
     }
   }
 
@@ -242,20 +297,30 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     final caloriesText = _totalCalorieValueController.text.trim();
     final quantityText = _quantityController.text.trim();
 
-    if (foodName.isEmpty || caloriesText.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('음식 이름과 칼로리를 입력해주세요')));
+    if (foodName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.enterFoodName)),
+      );
+      return;
+    }
+    if (caloriesText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.enterFoodNameAndCalories),
+        ),
+      );
       return;
     }
 
     final calories = double.tryParse(caloriesText);
     final quantity = double.tryParse(quantityText) ?? 1.0;
-    
+
     if (calories == null || calories <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('올바른 칼로리를 입력해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.enterValidCalories),
+        ),
+      );
       return;
     }
 
@@ -264,31 +329,45 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     try {
       // DB에 100g당 칼로리로 저장 (호환성 유지)
       final foodId = await DatabaseService().addFood(
-        foodName, 
-        calories, 
+        foodName,
+        calories,
         category: _selectedCustomCategory,
       );
+      final l10n = AppLocalizations.of(context)!;
       await Provider.of<AppProvider>(
         context,
         listen: false,
       ).addFoodIntake(foodId, quantity, totalCalories);
 
+      // 즉시 아바타 반응 트리거
+      if (context.mounted) {
+        Provider.of<AppProvider>(
+          context,
+          listen: false,
+        ).triggerFoodAddedCeremony();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$foodName ${totalCalories.toInt()}kcal 추가되었습니다')),
+        SnackBar(
+          content: Text(
+            '$foodName ${totalCalories.toInt()}kcal ${l10n.foodAdded}',
+          ),
+        ),
       );
 
       // 입력 필드 초기화
       _totalCalorieFoodNameController.clear();
       _totalCalorieValueController.clear();
       _quantityController.text = '1';
-      
+
       if (mounted) {
         Navigator.pop(context, true);
       }
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('음식 추가에 실패했습니다: $e')));
+      ).showSnackBar(SnackBar(content: Text('${l10n.foodAddFailed}: $e')));
     }
   }
 
@@ -297,19 +376,21 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     final foodName = _totalCalorieFoodNameController.text.trim();
 
     if (foodName.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('음식 이름을 입력해주세요')));
+      ).showSnackBar(SnackBar(content: Text(l10n.enterFoodName)));
       return;
     }
 
     try {
       // 0kcal로 임시 저장
       final foodId = await DatabaseService().addFood(
-        foodName, 
-        0.0, 
+        foodName,
+        0.0,
         category: _selectedCustomCategory,
       );
+      final l10n = AppLocalizations.of(context)!;
       await Provider.of<AppProvider>(
         context,
         listen: false,
@@ -317,7 +398,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$foodName 임시 저장됨 (나중에 칼로리 입력 필요)'),
+          content: Text('$foodName ${l10n.quickSaveSuccess}'),
           backgroundColor: Colors.orange,
           duration: const Duration(seconds: 3),
         ),
@@ -325,14 +406,16 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
       // 입력 필드 초기화
       _totalCalorieFoodNameController.clear();
-      
+
       if (mounted) {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('음식 추가에 실패했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.foodAddFailed}: $e'),
+        ),
+      );
     }
   }
 
@@ -343,19 +426,23 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     final servingCountText = _servingCountController.text.trim();
 
     if (foodName.isEmpty || servingCaloriesText.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('음식 이름과 1회 칼로리를 입력해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.enterFoodNameAndCalories),
+        ),
+      );
       return;
     }
 
     final servingCalories = double.tryParse(servingCaloriesText);
     final servingCount = double.tryParse(servingCountText) ?? 1.0;
-    
+
     if (servingCalories == null || servingCalories <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('올바른 칼로리를 입력해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.enterValidCalories),
+        ),
+      );
       return;
     }
 
@@ -364,8 +451,8 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     try {
       // DB에 저장
       final foodId = await DatabaseService().addFood(
-        foodName, 
-        servingCalories, 
+        foodName,
+        servingCalories,
         category: _selectedCustomCategory,
       );
       await Provider.of<AppProvider>(
@@ -373,8 +460,20 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
         listen: false,
       ).addFoodIntake(foodId, servingCount, totalCalories);
 
+      // 즉시 아바타 반응 트리거
+      if (context.mounted) {
+        Provider.of<AppProvider>(
+          context,
+          listen: false,
+        ).triggerFoodAddedCeremony();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$foodName ${totalCalories.toInt()}kcal 추가되었습니다')),
+        SnackBar(
+          content: Text(
+            '$foodName ${totalCalories.toInt()}kcal ${AppLocalizations.of(context)!.foodAdded}',
+          ),
+        ),
       );
 
       // 입력 필드 초기화
@@ -382,14 +481,16 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       _servingSizeController.clear();
       _servingCaloriesController.clear();
       _servingCountController.text = '1';
-      
+
       if (mounted) {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('음식 추가에 실패했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.foodAddFailed}: $e'),
+        ),
+      );
     }
   }
 
@@ -406,7 +507,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${food['name']} 즐겨찾기 해제됨')),
+            SnackBar(
+              content: Text(
+                '${food['name']} ${AppLocalizations.of(context)!.favoriteRemoved}',
+              ),
+            ),
           );
         }
       } else {
@@ -417,7 +522,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${food['name']} 즐겨찾기 추가됨')),
+            SnackBar(
+              content: Text(
+                '${food['name']} ${AppLocalizations.of(context)!.favoriteAdded}',
+              ),
+            ),
           );
         }
       }
@@ -428,9 +537,10 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('음식 입력'),
+        title: Text(l10n.foodInput),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -442,24 +552,27 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // 1. 탭 선택 (최근/즐겨찾기/검색/직접) - 항상 표시
-          _buildSourceTabSelector(),
-          
-          // 2. 탭 내용
-          Expanded(
-            child: _buildSourceTabContent(),
-          ),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. 탭 선택 (최근/즐겨찾기/검색/직접) - 항상 표시
+            _buildSourceTabSelector(),
+
+            // 2. 탭 내용
+            Expanded(child: _buildSourceTabContent()),
+          ],
+        ),
       ),
-      
+
       // FAB - 100g당 모드에서 선택된 음식이 있을 때만 표시 (검색 탭에서만 유효)
-      floatingActionButton: _selectedSourceTab == 2 && _inputMode == FoodInputMode.per100g && _selectedFood != null
+      floatingActionButton:
+          _selectedSourceTab == 2 &&
+              _inputMode == FoodInputMode.per100g &&
+              _selectedFood != null
           ? FloatingActionButton.extended(
               onPressed: _addFoodIntake,
               icon: const Icon(Icons.add),
-              label: const Text('섭취 추가'),
+              label: Text(l10n.addIntake),
             )
           : null,
     );
@@ -485,10 +598,14 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       ),
       child: Row(
         children: [
-          _buildTabItem(0, '최근', Icons.history),
-          _buildTabItem(1, '즐겨찾기', Icons.star),
-          _buildTabItem(2, '검색', Icons.search),
-          _buildTabItem(3, '직접추가', Icons.add_circle_outline),
+          _buildTabItem(0, AppLocalizations.of(context)!.recent, Icons.history),
+          _buildTabItem(1, AppLocalizations.of(context)!.favorites, Icons.star),
+          _buildTabItem(2, AppLocalizations.of(context)!.search, Icons.search),
+          _buildTabItem(
+            3,
+            AppLocalizations.of(context)!.customAdd,
+            Icons.add_circle_outline,
+          ),
         ],
       ),
     );
@@ -497,32 +614,35 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
   Widget _buildTabItem(int index, String label, IconData icon) {
     final isSelected = _selectedSourceTab == index;
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _selectedSourceTab = index),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            border: isSelected ? Border(
-              bottom: BorderSide(
-                color: colorScheme.primary,
-                width: 3,
-              ),
-            ) : null,
+            border: isSelected
+                ? Border(
+                    bottom: BorderSide(color: colorScheme.primary, width: 3),
+                  )
+                : null,
           ),
           child: Column(
             children: [
               Icon(
-                icon, 
-                color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                icon,
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
                 size: 20,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -536,23 +656,28 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   Widget _buildSourceTabContent() {
     switch (_selectedSourceTab) {
-      case 0: return _buildRecentFoodsTab();
-      case 1: return _buildFavoritesTab();
-      case 2: return _buildSearchTab();
-      case 3: return _buildCustomFoodTab();
-      default: return _buildSearchTab();
+      case 0:
+        return _buildRecentFoodsTab();
+      case 1:
+        return _buildFavoritesTab();
+      case 2:
+        return _buildSearchTab();
+      case 3:
+        return _buildCustomFoodTab();
+      default:
+        return _buildSearchTab();
     }
   }
 
   Widget _buildRecentFoodsTab() {
     if (_recentFoods.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.history, size: 48, color: Colors.grey),
             SizedBox(height: 16),
-            Text('최근에 먹은 음식이 없습니다'),
+            Text(AppLocalizations.of(context)!.noRecentFoods),
           ],
         ),
       );
@@ -569,15 +694,18 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   Widget _buildFavoritesTab() {
     if (_favorites.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.star_border, size: 48, color: Colors.grey),
             SizedBox(height: 16),
-            Text('즐겨찾기한 음식이 없습니다'),
+            Text(AppLocalizations.of(context)!.noFavoriteFoods),
             SizedBox(height: 8),
-            Text('음식 목록에서 ⭐를 눌러 추가해보세요', style: TextStyle(color: Colors.grey)),
+            Text(
+              AppLocalizations.of(context)!.addFavoriteHint,
+              style: TextStyle(color: Colors.grey),
+            ),
           ],
         ),
       );
@@ -601,7 +729,9 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _filteredFoods.isEmpty
-              ? const Center(child: Text('검색 결과가 없습니다'))
+              ? Center(
+                  child: Text(AppLocalizations.of(context)!.noSearchResults),
+                )
               : ListView.builder(
                   itemCount: _filteredFoods.length,
                   itemBuilder: (context, index) {
@@ -619,24 +749,22 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       children: [
         // 입력 모드 선택 (전체/1회/100g/빠른)
         _buildInputModeSelector(),
-        
+
         // 모드별 입력 폼
         if (_inputMode == FoodInputMode.perServing)
           _buildServingSizeInput()
-        else if (_inputMode == FoodInputMode.totalCalories || _inputMode == FoodInputMode.quickRecord)
+        else if (_inputMode == FoodInputMode.totalCalories ||
+            _inputMode == FoodInputMode.quickRecord)
           _buildTotalCalorieInput()
         else
           // 100g당 모드는 여기서 지원하지 않거나 별도 처리 (여기서는 간단히 안내 문구 또는 기존 커스텀 폼 사용)
           // 기존 _addCustomFood 로직을 사용하는 폼을 보여줄 수도 있음.
           // 하지만 일관성을 위해 Total/Serving/Quick 위주로 구성.
-          Expanded(
-            child: Center(
-              child: Text('100g당 입력은 검색 탭을 이용해주세요.'),
-            ),
-          ),
+          Expanded(child: Center(child: Text('100g당 입력은 검색 탭을 이용해주세요.'))),
       ],
     );
   }
+
   Widget _buildInputModeSelector() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -644,26 +772,26 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SegmentedButton<FoodInputMode>(
-          segments: const [
+          segments: [
             ButtonSegment(
               value: FoodInputMode.totalCalories,
-              label: Text('전체'),
-              icon: Icon(Icons.straighten, size: 16),
+              label: Text(AppLocalizations.of(context)!.inputModeTotal),
+              icon: const Icon(Icons.straighten, size: 16),
             ),
             ButtonSegment(
               value: FoodInputMode.perServing,
-              label: Text('1회'),
-              icon: Icon(Icons.restaurant_menu, size: 16),
+              label: Text(AppLocalizations.of(context)!.inputModeServing),
+              icon: const Icon(Icons.restaurant_menu, size: 16),
             ),
             ButtonSegment(
               value: FoodInputMode.per100g,
-              label: Text('100g'),
-              icon: Icon(Icons.balance, size: 16),
+              label: Text(AppLocalizations.of(context)!.inputMode100g),
+              icon: const Icon(Icons.balance, size: 16),
             ),
             ButtonSegment(
               value: FoodInputMode.quickRecord,
-              label: Text('빠른'),
-              icon: Icon(Icons.bolt, size: 16),
+              label: Text(AppLocalizations.of(context)!.inputModeQuick),
+              icon: const Icon(Icons.bolt, size: 16),
             ),
           ],
           selected: {_inputMode},
@@ -688,7 +816,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   Widget _buildTotalCalorieInput() {
     final isQuickMode = _inputMode == FoodInputMode.quickRecord;
-    
+
     return Expanded(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -710,10 +838,12 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
                     Expanded(
                       child: Text(
                         isQuickMode
-                            ? '음식 이름만 입력하고 나중에 칼로리를 추가할 수 있어요'
-                            : '음식의 총 칼로리를 직접 입력하세요',
+                            ? AppLocalizations.of(context)!.quickRecordHelp
+                            : AppLocalizations.of(context)!.totalCalorieHelp,
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
@@ -722,58 +852,64 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // 음식 이름
             TextField(
               controller: _totalCalorieFoodNameController,
-              decoration: const InputDecoration(
-                labelText: '음식 이름',
-                hintText: '예: 햄버거, 불고기 정식',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.restaurant),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.foodName,
+                hintText: AppLocalizations.of(context)!.foodNameHint,
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.restaurant),
               ),
-              textInputAction: isQuickMode ? TextInputAction.done : TextInputAction.next,
+              textInputAction: isQuickMode
+                  ? TextInputAction.done
+                  : TextInputAction.next,
             ),
-            
+
             if (!isQuickMode) ...[
               const SizedBox(height: 16),
-              
+
               // 칼로리
               TextField(
                 controller: _totalCalorieValueController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '칼로리',
-                  hintText: '예: 550',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.local_fire_department),
-                  suffixText: 'kcal',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.calories,
+                  hintText: AppLocalizations.of(context)!.caloriesHint,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.local_fire_department),
+                  suffixText: AppLocalizations.of(context)!.caloriesUnit,
                 ),
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
-              
+
               // 수량
               TextField(
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '섭취량',
-                  hintText: '기본: 1',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.shopping_bag),
-                  suffixText: '개/인분',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.quantity,
+                  hintText: '${AppLocalizations.of(context)!.defaultLabel}: 1',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.shopping_bag),
+                  suffixText: AppLocalizations.of(context)!.unitServings,
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 24),
-            
+
             // 추가 버튼
             ElevatedButton.icon(
               onPressed: isQuickMode ? _addQuickRecord : _addTotalCalorie,
               icon: Icon(isQuickMode ? Icons.bolt : Icons.add),
-              label: Text(isQuickMode ? '임시 저장 (나중에 칼로리 입력)' : '추가'),
+              label: Text(
+                isQuickMode
+                    ? AppLocalizations.of(context)!.saveTemporary
+                    : AppLocalizations.of(context)!.add,
+              ),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
               ),
@@ -805,9 +941,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '영양성분표의 1회 제공량 정보를 그대로 입력하세요',
+                        AppLocalizations.of(context)!.servingInfoHelp,
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
@@ -816,42 +954,55 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
-            // 1회 제공량 칼로리
+
+            // 음식 이름
             TextField(
-              controller: _servingCaloriesController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '1회 제공량 칼로리',
-                hintText: '예: 140',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.local_fire_department),
-                suffixText: 'kcal',
+              controller: _servingFoodNameController,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.foodName,
+                hintText: AppLocalizations.of(context)!.foodNameHint,
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.restaurant),
               ),
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 16),
-            
+
+            // 1회 제공량 칼로리
+            TextField(
+              controller: _servingCaloriesController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.servingCalories,
+                hintText: AppLocalizations.of(context)!.caloriesHint,
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.local_fire_department),
+                suffixText: AppLocalizations.of(context)!.caloriesUnit,
+              ),
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 16),
+
             // 섭취한 횟수
             TextField(
               controller: _servingCountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '섭취한 횟수',
-                hintText: '기본: 1',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.repeat),
-                suffixText: '회',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.servingCount,
+                hintText: '${AppLocalizations.of(context)!.defaultLabel}: 1',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.repeat),
+                suffixText: AppLocalizations.of(context)!.servingUnit,
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // 추가 버튼
             ElevatedButton.icon(
               onPressed: _addServingSize,
               icon: const Icon(Icons.add),
-              label: const Text('추가'),
+              label: Text(AppLocalizations.of(context)!.add),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
               ),
@@ -871,10 +1022,10 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
           // 검색 필드
           TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
-              hintText: '음식 검색...',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.searchFoodHint,
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -891,7 +1042,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
                 return Container(
                   margin: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(category),
+                    label: Text(_getLocalizedCategory(context, category)),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() => _selectedCategory = category);
@@ -940,11 +1091,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
               controller: _quantityController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              decoration: const InputDecoration(
-                hintText: '수량',
-                suffixText: '인분',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.quantityHint,
+                suffixText: AppLocalizations.of(context)!.servingsHint,
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 8,
                 ),
@@ -967,7 +1118,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   Future<void> _showFoodAddDialog(Map<String, dynamic> food) async {
     _quantityController.text = '1';
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -984,10 +1135,10 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
             TextField(
               controller: _quantityController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '섭취량',
-                suffixText: '인분/개',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.quantity,
+                suffixText: AppLocalizations.of(context)!.unitCount,
+                border: const OutlineInputBorder(),
               ),
               autofocus: true,
             ),
@@ -996,20 +1147,20 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
               // 다이얼로그 닫기
               Navigator.pop(context);
-              
+
               // 선택된 음식 설정
               setState(() => _selectedFood = food);
-              
+
               // 음식 추가
               await _addFoodIntake();
             },
-            child: const Text('추가'),
+            child: Text(AppLocalizations.of(context)!.addFoodButton),
           ),
         ],
       ),
@@ -1027,9 +1178,12 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       child: ListTile(
         title: Text(food['name']),
         subtitle: Text(
-          isRecent 
-            ? '최근 섭취: ${food['last_eaten']?.toString().substring(0, 10) ?? '알 수 없음'}'
-            : '${food['calories_per_100g']}kcal / 100g'
+          isRecent
+              ? AppLocalizations.of(context)!.consumedOn(
+                  food['last_eaten']?.toString().substring(0, 10) ??
+                      AppLocalizations.of(context)!.unknown,
+                )
+              : '${food['calories_per_100g']}kcal / 100g',
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1058,25 +1212,25 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('직접 음식 추가'),
+        title: Text(AppLocalizations.of(context)!.customAdd),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _customFoodController,
-              decoration: const InputDecoration(
-                labelText: '음식 이름',
-                hintText: '예: 김치찌개',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.foodName,
+                hintText: AppLocalizations.of(context)!.foodNameHint,
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _customCaloriesController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '칼로리 (100g당)',
-                hintText: '예: 45',
-                suffixText: 'kcal',
+              decoration: InputDecoration(
+                labelText: '${AppLocalizations.of(context)!.calories} (100g)',
+                hintText: AppLocalizations.of(context)!.caloriesHint,
+                suffixText: AppLocalizations.of(context)!.caloriesUnit,
               ),
             ),
           ],
@@ -1084,14 +1238,14 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               _addCustomFood();
             },
-            child: const Text('추가'),
+            child: Text(AppLocalizations.of(context)!.add),
           ),
         ],
       ),

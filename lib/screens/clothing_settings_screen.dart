@@ -4,6 +4,7 @@ import '../providers/app_provider.dart';
 import '../avatar/clothing_colors.dart';
 import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
+import '../l10n/app_localizations.dart';
 
 class ClothingSettingsScreen extends StatefulWidget {
   const ClothingSettingsScreen({super.key});
@@ -18,9 +19,10 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('옷 색상 변경'),
+        title: Text(l10n.clothingSettingsTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -34,11 +36,13 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
       ),
       body: Consumer<AppProvider>(
         builder: (context, appProvider, child) {
-          final currentColors = _tempColors ?? 
-                               appProvider.userProfile?.getClothingColors() ?? 
-                               ClothingColors.defaultColors;
-          final originalColors = appProvider.userProfile?.getClothingColors() ?? 
-                                ClothingColors.defaultColors;
+          final currentColors =
+              _tempColors ??
+              appProvider.userProfile?.getClothingColors() ??
+              ClothingColors.defaultColors;
+          final originalColors =
+              appProvider.userProfile?.getClothingColors() ??
+              ClothingColors.defaultColors;
 
           return Column(
             children: [
@@ -54,7 +58,10 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                         child: SizedBox(
                           height: 300,
                           width: 200,
-                          child: _buildPreviewAvatar(appProvider, currentColors),
+                          child: _buildPreviewAvatar(
+                            appProvider,
+                            currentColors,
+                          ),
                         ),
                       ),
                       // 미리보기 표시
@@ -63,7 +70,10 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                           top: 16,
                           right: 16,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.orange.shade100,
                               borderRadius: BorderRadius.circular(20),
@@ -72,10 +82,14 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.visibility, size: 16, color: Colors.orange.shade700),
+                                Icon(
+                                  Icons.visibility,
+                                  size: 16,
+                                  color: Colors.orange.shade700,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '미리보기',
+                                  l10n.preview,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -90,7 +104,7 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                   ),
                 ),
               ),
-              
+
               // 색상 선택 영역
               Expanded(
                 flex: 2,
@@ -98,7 +112,9 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -111,37 +127,47 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '색상 테마 선택',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        l10n.colorThemeSelection,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),
                       Expanded(
                         child: GridView.builder(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1.5,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                childAspectRatio: 1.5,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
                           itemCount: ClothingColors.presets.length,
                           itemBuilder: (context, index) {
                             final preset = ClothingColors.presets[index];
-                            final name = ClothingColors.presetNames[index];
-                            final isSelected = _areColorsEqual(currentColors, preset);
+                            final name = ClothingColors.getPresetNames(
+                              context,
+                            )[index];
+                            final isSelected = _areColorsEqual(
+                              currentColors,
+                              preset,
+                            );
 
                             return GestureDetector(
                               onTap: () {
                                 setState(() {
                                   _tempColors = preset;
-                                  _hasChanges = !_areColorsEqual(preset, originalColors);
+                                  _hasChanges = !_areColorsEqual(
+                                    preset,
+                                    originalColors,
+                                  );
                                 });
                               },
                               child: Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300,
+                                    color: isSelected
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey.shade300,
                                     width: isSelected ? 2.0 : 1.0,
                                   ),
                                   borderRadius: BorderRadius.circular(12),
@@ -150,7 +176,8 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         _buildColorCircle(preset.braColor),
                                         const SizedBox(width: 8),
@@ -162,8 +189,12 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                                       name,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                        color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: isSelected
+                                            ? Theme.of(context).primaryColor
+                                            : Colors.black87,
                                       ),
                                     ),
                                   ],
@@ -206,23 +237,25 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            child: const Text('취소'),
+                            child: Text(l10n.cancel),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () async {
-                              await appProvider.updateClothingColors(_tempColors!);
+                              await appProvider.updateClothingColors(
+                                _tempColors!,
+                              );
                               setState(() {
                                 _tempColors = null;
                                 _hasChanges = false;
                               });
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('옷 색상이 변경되었습니다'),
-                                    duration: Duration(seconds: 2),
+                                  SnackBar(
+                                    content: Text(l10n.clothingColorChanged),
+                                    duration: const Duration(seconds: 2),
                                   ),
                                 );
                               }
@@ -230,7 +263,7 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            child: const Text('적용'),
+                            child: Text(l10n.apply),
                           ),
                         ),
                       ],
@@ -258,7 +291,9 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
       bmi: bmi,
       height: height,
       gender: appProvider.userProfile!.gender,
-      lifestyle: _mapActivityLevelToLifestylePattern(appProvider.userProfile!.activityLevel),
+      lifestyle: _mapActivityLevelToLifestylePattern(
+        appProvider.userProfile!.activityLevel,
+      ),
       clothingColors: colors, // 선택된 색상 적용
     );
   }
@@ -291,27 +326,28 @@ class _ClothingSettingsScreenState extends State<ClothingSettingsScreen> {
   }
 
   bool _areColorsEqual(ClothingColors a, ClothingColors b) {
-    return a.braColor.value == b.braColor.value && 
-           a.tightsColor.value == b.tightsColor.value;
+    return a.braColor.value == b.braColor.value &&
+        a.tightsColor.value == b.tightsColor.value;
   }
 
   void _showDiscardChangesDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('변경사항 취소'),
-        content: const Text('변경한 내용을 취소하고 나가시겠습니까?'),
+        title: Text(l10n.discardChanges),
+        content: Text(l10n.discardChangesConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('머무르기'),
+            child: Text(l10n.stay),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context); // 다이얼로그 닫기
               Navigator.pop(context); // 설정 화면 닫기
             },
-            child: const Text('나가기'),
+            child: Text(l10n.exit),
           ),
         ],
       ),

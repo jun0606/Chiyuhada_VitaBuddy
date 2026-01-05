@@ -6,6 +6,7 @@ import '../models/body_types.dart';
 import '../models/body_composition.dart';
 import '../widgets/advanced_avatar_widget.dart';
 import '../avatar/body_measurements.dart';
+import '../l10n/app_localizations.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -35,6 +36,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
   bool _hasChanges = false;
   bool _isLoading = true;
+  bool _hasError = false; // 프로필 로드 실패 상태
 
   @override
   void initState() {
@@ -48,30 +50,44 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
     final provider = context.read<AppProvider>();
     final profile = provider.userProfile;
 
-    if (profile != null) {
-      _originalProfile = profile;
-      _nameController.text = profile.name ?? '';
-      _height = profile.height;
-      _weight = profile.initialWeight;
-      _gender = profile.gender;
-      _age = profile.age;
-      _activityLevel = profile.activityLevel;
-      _somatotype = profile.getSomatotype();
-      _bodyShape = profile.getBodyShape();
-      
-      final bodyComp = profile.getBodyComposition();
-      _muscleType = bodyComp != null 
-          ? MuscleType.fromString(bodyComp.muscleType)
-          : MuscleType.medium;
-      
-      _personalityTraits = Map<String, int>.from(profile.personalityTraits ?? {
-        'extraversion': 50,
-        'conscientiousness': 50,
-        'neuroticism': 50,
-        'openness': 50,
-        'agreeableness': 50,
+    print('Debug: _loadCurrentProfile called. Profile: ${profile?.name}'); // 디버깅 로그
+
+    // 프로필이 반드시 존재해야 함 (앱 설치 시 프로필 설정 완료)
+    if (profile == null) {
+      print('Debug: Profile is NULL. Showing error screen instead of redirecting.'); 
+      // 리다이렉트 대신 에러 상태 표시
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
       });
+      return;
     }
+
+    _originalProfile = profile;
+    _nameController.text = profile.name ?? '';
+    _height = profile.height;
+    _weight = profile.initialWeight;
+    _gender = profile.gender;
+    _age = profile.age;
+    _activityLevel = profile.activityLevel;
+    _somatotype = profile.getSomatotype();
+    _bodyShape = profile.getBodyShape();
+
+    final bodyComp = profile.getBodyComposition();
+    _muscleType = bodyComp != null
+        ? MuscleType.fromString(bodyComp.muscleType)
+        : MuscleType.medium;
+
+    _personalityTraits = Map<String, int>.from(
+      profile.personalityTraits ??
+          {
+            'extraversion': 50,
+            'conscientiousness': 50,
+            'neuroticism': 50,
+            'openness': 50,
+            'agreeableness': 50,
+          },
+    );
 
     setState(() => _isLoading = false);
   }
@@ -80,7 +96,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
     if (_originalProfile == null) return;
 
     setState(() {
-      _hasChanges = _nameController.text != (_originalProfile!.name ?? '') ||
+      _hasChanges =
+          _nameController.text != (_originalProfile!.name ?? '') ||
           _height != _originalProfile!.height ||
           _weight != _originalProfile!.initialWeight ||
           _gender != _originalProfile!.gender ||
@@ -95,7 +112,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
   bool _arePersonalityTraitsEqual() {
     final original = _originalProfile?.personalityTraits ?? {};
     if (_personalityTraits.length != original.length) return false;
-    
+
     for (var key in _personalityTraits.keys) {
       if (_personalityTraits[key] != original[key]) return false;
     }
@@ -108,7 +125,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
     final provider = context.read<AppProvider>();
 
     final updatedProfile = _originalProfile!.copyWith(
-      name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+      name: _nameController.text.trim().isEmpty
+          ? null
+          : _nameController.text.trim(),
       height: _height,
       initialWeight: _weight,
       gender: _gender,
@@ -121,17 +140,19 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
     );
 
     // BodyComposition 업데이트
-    final bodyComp = BodyComposition.fromBodyShape(_bodyShape?.name ?? 'rectangle')
-        .copyWith(muscleType: _muscleType.name);
+    final bodyComp = BodyComposition.fromBodyShape(
+      _bodyShape?.name ?? 'rectangle',
+    ).copyWith(muscleType: _muscleType.name);
     updatedProfile.setBodyComposition(bodyComp);
 
     await provider.saveUserProfile(updatedProfile);
 
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('프로필이 업데이트되었습니다'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(l10n.profileUpdated),
+          duration: const Duration(seconds: 2),
         ),
       );
       Navigator.pop(context);
@@ -141,19 +162,22 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
   Future<bool> _onWillPop() async {
     if (!_hasChanges) return true;
 
+    if (!mounted) return false;
+    final l10n = AppLocalizations.of(context)!;
+
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('변경사항 취소'),
-            content: const Text('변경한 내용을 저장하지 않고 나가시겠습니까?'),
+            title: Text(l10n.discardChanges),
+            content: Text(l10n.discardChangesMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('계속 수정'),
+                child: Text(l10n.continueEditing),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('나가기'),
+                child: Text(l10n.exitWithoutSaving),
               ),
             ],
           ),
@@ -171,8 +195,33 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_hasError) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.profileEdit)),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('프로필 정보를 불러올 수 없습니다.'),
+              const Text('잠시 후 다시 시도해주세요.', style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() => _isLoading = true);
+                  _loadCurrentProfile();
+                },
+                child: const Text('다시 시도'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -180,7 +229,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
       onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('프로필 수정'),
+          title: Text(l10n.profileEdit),
           backgroundColor: Colors.transparent,
           elevation: 0,
           flexibleSpace: Container(
@@ -197,45 +246,45 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           ),
           bottom: TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(icon: Icon(Icons.person), text: '기본'),
-              Tab(icon: Icon(Icons.fitness_center), text: '신체'),
-              Tab(icon: Icon(Icons.psychology), text: '성격'),
+            tabs: [
+              Tab(icon: const Icon(Icons.person), text: l10n.basicInfo),
+              Tab(icon: const Icon(Icons.fitness_center), text: l10n.bodyInfo),
+              Tab(icon: const Icon(Icons.psychology), text: l10n.personality),
             ],
           ),
         ),
-        body: Column(
-          children: [
-            // 아바타 미리보기
-            _buildAvatarPreview(),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 아바타 미리보기
+              _buildAvatarPreview(),
 
-            // 탭 내용
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildBasicInfoTab(),
-                  _buildBodyInfoTab(),
-                  _buildPersonalityTab(),
-                ],
-              ),
-            ),
-
-            // 저장 버튼
-            if (_hasChanges)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(26), // 0.1 opacity
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
+              // 탭 내용
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildBasicInfoTab(),
+                    _buildBodyInfoTab(),
+                    _buildPersonalityTab(),
                   ],
                 ),
-                child: SafeArea(
+              ),
+
+              // 저장 버튼
+              if (_hasChanges)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(26), // 0.1 opacity
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -247,9 +296,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        '변경사항 저장',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.saveChanges,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -257,8 +306,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -266,15 +315,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
   Widget _buildAvatarPreview() {
     final bmi = _weight / ((_height / 100) * (_height / 100));
-    
+
     return Container(
       height: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade300),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
       ),
       child: Center(
         child: AdvancedAvatarWidget(
@@ -307,6 +354,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
   // 기본 정보 탭
   Widget _buildBasicInfoTab() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -315,22 +363,30 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           // 이름
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: '이름 (선택사항)',
-              hintText: '예: 홍길동',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.nameOptional,
+              hintText: l10n.nameHint,
+              border: const OutlineInputBorder(),
             ),
             onChanged: (_) => _checkChanges(),
           ),
           const SizedBox(height: 24),
 
           // 성별
-          Text('성별', style: Theme.of(context).textTheme.titleMedium),
+          Text(l10n.gender, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'female', label: Text('여성'), icon: Icon(Icons.female)),
-              ButtonSegment(value: 'male', label: Text('남성'), icon: Icon(Icons.male)),
+            segments: [
+              ButtonSegment(
+                value: 'female',
+                label: Text(l10n.female),
+                icon: Icon(Icons.female),
+              ),
+              ButtonSegment(
+                value: 'male',
+                label: Text(l10n.male),
+                icon: Icon(Icons.male),
+              ),
             ],
             selected: {_gender},
             onSelectionChanged: (Set<String> selected) {
@@ -343,13 +399,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           const SizedBox(height: 24),
 
           // 나이
-          Text('나이: $_age세', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            '${l10n.age}: $_age${l10n.ageUnit}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Slider(
             value: _age.toDouble(),
             min: 10,
             max: 100,
             divisions: 90,
-            label: '$_age세',
+            label: '$_age${l10n.ageUnit}',
             onChanged: (value) {
               setState(() {
                 _age = value.toInt();
@@ -360,7 +419,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           const SizedBox(height: 24),
 
           // 키
-          Text('키: ${_height.toInt()}cm', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            '${l10n.height}: ${_height.toInt()}cm',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Slider(
             value: _height,
             min: 130,
@@ -377,7 +439,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           const SizedBox(height: 24),
 
           // 체중
-          Text('체중: ${_weight.toInt()}kg', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            '${l10n.weight}: ${_weight.toInt()}kg',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Slider(
             value: _weight,
             min: 30,
@@ -394,19 +459,32 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           const SizedBox(height: 24),
 
           // 활동 수준
-          Text('활동 수준', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            l10n.activityLevel,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _activityLevel,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'sedentary', child: Text('거의 운동 안 함')),
-              DropdownMenuItem(value: 'light', child: Text('가벼운 운동 (주 1-3일)')),
-              DropdownMenuItem(value: 'moderate', child: Text('보통 운동 (주 3-5일)')),
-              DropdownMenuItem(value: 'active', child: Text('적극적 운동 (주 6-7일)')),
-              DropdownMenuItem(value: 'very_active', child: Text('매우 적극적 (하루 2회 이상)')),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            items: [
+              DropdownMenuItem(
+                value: 'sedentary',
+                child: Text(l10n.activitySedentary),
+              ),
+              DropdownMenuItem(value: 'light', child: Text(l10n.activityLight)),
+              DropdownMenuItem(
+                value: 'moderate',
+                child: Text(l10n.activityModerate),
+              ),
+              DropdownMenuItem(
+                value: 'active',
+                child: Text(l10n.activityActive),
+              ),
+              DropdownMenuItem(
+                value: 'very_active',
+                child: Text(l10n.activityVeryActive),
+              ),
             ],
             onChanged: (value) {
               if (value != null) {
@@ -424,6 +502,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
   // 신체 정보 탭
   Widget _buildBodyInfoTab() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -431,14 +510,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
         children: [
           // 체질 선택
           Text(
-            '체질 유형',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            l10n.stepSomatotype,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            '당신의 체질 타입을 선택하세요. 대사율 계산에 반영됩니다.',
+            l10n.somatotypeDesc,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -449,7 +528,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Card(
                 elevation: isSelected ? 4 : 1,
-                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : null,
                 child: InkWell(
                   onTap: () {
                     setState(() {
@@ -462,8 +543,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                     child: Row(
                       children: [
                         Icon(
-                          isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                          color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                          isSelected
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -471,14 +556,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                type.displayName,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                _getLocalizedSomatotypeName(context, type),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                type.description,
+                                _getLocalizedSomatotypeDesc(context, type),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -496,14 +580,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
           // 체형 선택
           Text(
-            '체형 유형',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            l10n.stepBodyShape,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            '살이 주로 어디에 찌나요? 아바타 표현에 반영됩니다.',
+            l10n.bodyShapeDesc,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -514,7 +598,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Card(
                 elevation: isSelected ? 4 : 1,
-                color: isSelected ? Theme.of(context).colorScheme.secondaryContainer : null,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.secondaryContainer
+                    : null,
                 child: InkWell(
                   onTap: () {
                     setState(() {
@@ -527,8 +613,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                     child: Row(
                       children: [
                         Icon(
-                          isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? Theme.of(context).colorScheme.secondary : null,
+                          isSelected
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.secondary
+                              : null,
                           size: 28,
                         ),
                         const SizedBox(width: 16),
@@ -537,14 +627,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                shape.displayName,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                _getLocalizedBodyShapeName(context, shape),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                shape.description,
+                                _getLocalizedBodyShapeDesc(context, shape),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -561,14 +650,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
           const SizedBox(height: 24),
 
           // 근육량
-          Text('근육량', style: Theme.of(context).textTheme.titleMedium),
+          Text(l10n.muscleType, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           SegmentedButton<MuscleType>(
             segments: MuscleType.values
-                .map((type) => ButtonSegment(
-                      value: type,
-                      label: Text(type.displayName),
-                    ))
+                .map(
+                  (type) => ButtonSegment(
+                    value: type,
+                    label: Text(_getLocalizedMuscleType(context, type)),
+                  ),
+                )
                 .toList(),
             selected: {_muscleType},
             onSelectionChanged: (Set<MuscleType> selected) {
@@ -589,7 +680,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '근육량이 많을수록 기초대사량이 높아집니다.',
+                      l10n.muscleInfo,
                       style: TextStyle(color: Colors.blue.shade900),
                     ),
                   ),
@@ -604,27 +695,28 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
   // 성격 정보 탭
   Widget _buildPersonalityTab() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '성격 특성',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            l10n.personality,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            '일상 활동량 계산에 반영됩니다. (NEAT)',
+            l10n.personalityDesc,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 32),
 
           // 외향성
           _buildPersonalitySlider(
-            '평소 활기차고 외향적인가요?',
+            l10n.questionExtraversion,
             _personalityTraits['extraversion']?.toDouble() ?? 50.0,
             (value) {
               setState(() {
@@ -637,7 +729,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
           // 성실성
           _buildPersonalitySlider(
-            '계획적이고 규칙적인가요?',
+            l10n.questionConscientiousness,
             _personalityTraits['conscientiousness']?.toDouble() ?? 50.0,
             (value) {
               setState(() {
@@ -650,7 +742,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
 
           // 신경성
           _buildPersonalitySlider(
-            '앉아 있을 때 자주 움직이나요?\n(손동작, 다리 떨기 등)',
+            l10n.questionNeuroticism,
             _personalityTraits['neuroticism']?.toDouble() ?? 50.0,
             (value) {
               setState(() {
@@ -671,7 +763,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '성격 특성에 따라 일일 권장 칼로리가 조정됩니다.',
+                      l10n.personalityInfo,
                       style: TextStyle(color: Colors.green.shade900),
                     ),
                   ),
@@ -696,7 +788,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
         const SizedBox(height: 12),
         Row(
           children: [
-            const Text('아니다'),
+            Text(AppLocalizations.of(context)!.no),
             Expanded(
               child: Slider(
                 value: value,
@@ -707,10 +799,82 @@ class _ProfileEditScreenState extends State<ProfileEditScreen>
                 onChanged: onChanged,
               ),
             ),
-            const Text('그렇다'),
+            Text(AppLocalizations.of(context)!.yes),
           ],
         ),
       ],
     );
+  }
+
+  String _getLocalizedSomatotypeName(BuildContext context, Somatotype type) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (type) {
+      case Somatotype.ectomorph:
+        return l10n.somatotypeEctomorph;
+      case Somatotype.mesomorph:
+        return l10n.somatotypeMesomorph;
+      case Somatotype.endomorph:
+        return l10n.somatotypeEndomorph;
+      case Somatotype.mixed:
+        return l10n.somatotypeMixed;
+    }
+  }
+
+  String _getLocalizedSomatotypeDesc(BuildContext context, Somatotype type) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (type) {
+      case Somatotype.ectomorph:
+        return l10n.somatotypeEctomorphDesc;
+      case Somatotype.mesomorph:
+        return l10n.somatotypeMesomorphDesc;
+      case Somatotype.endomorph:
+        return l10n.somatotypeEndomorphDesc;
+      case Somatotype.mixed:
+        return l10n.somatotypeMixedDesc;
+    }
+  }
+
+  String _getLocalizedBodyShapeName(BuildContext context, BodyShape shape) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (shape) {
+      case BodyShape.apple:
+        return l10n.bodyShapeApple;
+      case BodyShape.pear:
+        return l10n.bodyShapePear;
+      case BodyShape.hourglass:
+        return l10n.bodyShapeHourglass;
+      case BodyShape.rectangle:
+        return l10n.bodyShapeRectangle;
+      case BodyShape.invertedTriangle:
+        return l10n.bodyShapeInvertedTriangle;
+    }
+  }
+
+  String _getLocalizedBodyShapeDesc(BuildContext context, BodyShape shape) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (shape) {
+      case BodyShape.apple:
+        return l10n.bodyShapeAppleDesc;
+      case BodyShape.pear:
+        return l10n.bodyShapePearDesc;
+      case BodyShape.hourglass:
+        return l10n.bodyShapeHourglassDesc;
+      case BodyShape.rectangle:
+        return l10n.bodyShapeRectangleDesc;
+      case BodyShape.invertedTriangle:
+        return l10n.bodyShapeInvertedTriangleDesc;
+    }
+  }
+
+  String _getLocalizedMuscleType(BuildContext context, MuscleType type) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (type) {
+      case MuscleType.low:
+        return l10n.muscleLow;
+      case MuscleType.medium:
+        return l10n.muscleMedium;
+      case MuscleType.high:
+        return l10n.muscleHigh;
+    }
   }
 }

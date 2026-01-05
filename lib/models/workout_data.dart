@@ -11,6 +11,17 @@ enum WorkoutType {
   tennis,          // 테니스
   basketball,      // 농구
   soccer,          // 축구
+  aerobics,        // 에어로빅
+  badminton,       // 배드민턴
+  baseball,        // 야구
+  boxing,          // 복싱
+  golf,            // 골프
+  pilates,         // 필라테스
+  tableTennis,     // 탁구
+  volleyball,      // 배구
+  elliptical,      // 일립티컬
+  rowing,          // 로잉 머신
+  stairClimbing,   // 계단 오르기
   other,           // 기타
 }
 
@@ -34,6 +45,8 @@ class WorkoutData {
   final int? steps;
   final DataSource source;
   final String? externalId;  // 중복 방지용
+  final String? customName; // Health Connect에서 제공하는 실제 제목
+  final String? packageName; // 데이터 출처 앱 패키지명
 
   WorkoutData({
     required this.id,
@@ -47,6 +60,8 @@ class WorkoutData {
     this.steps,
     required this.source,
     this.externalId,
+    this.customName,
+    this.packageName,
   });
 
   /// 데이터베이스에 저장할 Map으로 변환
@@ -64,6 +79,8 @@ class WorkoutData {
       'steps': steps,
       'source': source.name,
       'external_id': externalId,
+      'custom_name': customName,
+      'package_name': packageName,
     };
   }
 
@@ -83,6 +100,8 @@ class WorkoutData {
       steps: map['steps'],
       source: _parseDataSource(map['source']),
       externalId: map['external_id'],
+      customName: map['custom_name'] ?? map['title'],
+      packageName: map['package_name'],
     );
   }
 
@@ -100,6 +119,17 @@ class WorkoutData {
     WorkoutType.tennis: 7.3,          // 테니스
     WorkoutType.basketball: 6.5,      // 농구
     WorkoutType.soccer: 7.0,          // 축구
+    WorkoutType.aerobics: 6.5,        // 에어로빅
+    WorkoutType.badminton: 4.5,       // 배드민턴
+    WorkoutType.baseball: 5.0,        // 야구
+    WorkoutType.boxing: 9.0,          // 복싱
+    WorkoutType.golf: 3.5,            // 골프
+    WorkoutType.pilates: 3.0,         // 필라테스
+    WorkoutType.tableTennis: 4.0,     // 탁구
+    WorkoutType.volleyball: 4.0,      // 배구
+    WorkoutType.elliptical: 5.0,      // 일립티컬
+    WorkoutType.rowing: 6.0,          // 로잉 머신
+    WorkoutType.stairClimbing: 8.0,   // 계단 오르기
     WorkoutType.other: 4.0,           // 기타 (중간값)
   };
 
@@ -152,6 +182,11 @@ class WorkoutData {
 
   /// 운동 종류를 한글 이름으로 변환
   String get displayName {
+    // 1. Health Connect에서 제공한 커스텀 제목이 있으면 최우선 사용
+    if (customName != null && customName!.isNotEmpty) {
+      return customName!;
+    }
+
     switch (type) {
       case WorkoutType.walking:
         return '걷기';
@@ -175,6 +210,28 @@ class WorkoutData {
         return '농구';
       case WorkoutType.soccer:
         return '축구';
+      case WorkoutType.aerobics:
+        return '에어로빅';
+      case WorkoutType.badminton:
+        return '배드민턴';
+      case WorkoutType.baseball:
+        return '야구';
+      case WorkoutType.boxing:
+        return '복싱';
+      case WorkoutType.golf:
+        return '골프';
+      case WorkoutType.pilates:
+        return '필라테스';
+      case WorkoutType.tableTennis:
+        return '탁구';
+      case WorkoutType.volleyball:
+        return '배구';
+      case WorkoutType.elliptical:
+        return '일립티컬';
+      case WorkoutType.rowing:
+        return '로잉 머신';
+      case WorkoutType.stairClimbing:
+        return '계단 오르기';
       case WorkoutType.other:
         return '기타 운동';
     }

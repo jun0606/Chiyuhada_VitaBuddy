@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/health_data_service.dart';
+import '../l10n/app_localizations.dart';
 import 'enhanced_profile_setup_screen.dart';
 import 'home_screen.dart';
+import 'language_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -46,6 +48,19 @@ class _SplashScreenState extends State<SplashScreen>
   void _navigateToNextScreen() async {
     final appProvider = Provider.of<AppProvider>(context, listen: false);
 
+    // 언어 설정이 안 되어 있으면 언어 선택 화면으로 이동
+    if (!appProvider.isLanguageSet) {
+      if (mounted) {
+        // flutter analyze 오류 방지: SplashScreen과 같은 폴더에 없으면 import 필요.
+        // 하지만 여기선 같은 screens 패키지 내라면 import만 추가하면 됨.
+        // 상단에 import '../screens/language_selection_screen.dart'; 추가 필요.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LanguageSelectionScreen(isFirstRun: true)),
+        );
+      }
+      return;
+    }
+
     if (appProvider.isProfileComplete) {
       // 프로필이 완성된 경우 헬스 데이터 권한 확인
       final healthService = HealthDataService();
@@ -72,36 +87,37 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _showHealthPermissionDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog(
       context: context,
       barrierDismissible: false, // 배경 터치로 닫기 방지
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.health_and_safety, color: Colors.green),
-              SizedBox(width: 8),
-              Text('헬스 데이터 권한'),
+              const Icon(Icons.health_and_safety, color: Colors.green),
+              const SizedBox(width: 8),
+              Text(l10n.healthDataPermission),
             ],
           ),
-          content: const Column(
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '앱에서 웨어러블 기기와의 칼로리 동기화를 위해 건강 데이터 접근 권한이 필요합니다.',
-                style: TextStyle(height: 1.5),
+                l10n.healthPermissionContent,
+                style: const TextStyle(height: 1.5),
               ),
-              SizedBox(height: 16),
-              Text('권한 허용 시:', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Text('• 걸음 수 및 칼로리 소모량 자동 동기화'),
-              Text('• 운동 기록 자동 가져오기'),
-              Text('• 더 정확한 칼로리 관리'),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
+              Text(l10n.healthPermissionAllowInfo, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(l10n.healthPermissionInfo1),
+              Text(l10n.healthPermissionInfo2),
+              Text(l10n.healthPermissionInfo3),
+              const SizedBox(height: 16),
               Text(
-                '권한을 거부해도 앱의 기본 기능은 사용할 수 있습니다.',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                l10n.healthPermissionDenyInfo,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),
@@ -110,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen>
               onPressed: () {
                 Navigator.of(context).pop(); // 나중에 요청
               },
-              child: const Text('나중에'),
+              child: Text(l10n.later),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -129,19 +145,21 @@ class _SplashScreenState extends State<SplashScreen>
                   );
                   await appProvider.syncHealthData();
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('헬스 데이터 권한이 허용되었습니다')),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.healthPermissionGranted)),
+                    );
+                  }
                 } else if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('헬스 데이터 권한이 거부되었습니다. 설정에서 허용해주세요'),
-                      duration: Duration(seconds: 3),
+                    SnackBar(
+                      content: Text(l10n.healthPermissionDenied),
+                      duration: const Duration(seconds: 3),
                     ),
                   );
                 }
               },
-              child: const Text('권한 허용'),
+              child: Text(l10n.allowPermission),
             ),
           ],
         );
@@ -177,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 24),
                 // 앱 이름
                 Text(
-                  '치유하다 VitaBuddy',
+                  AppLocalizations.of(context)!.homeTitle,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
@@ -186,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 16),
                 // 태그라인
                 Text(
-                  '건강한 삶의 동반자',
+                  AppLocalizations.of(context)!.homeSubtitle,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.black.withAlpha(204), // 0.8 opacity
                   ),

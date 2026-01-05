@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// 식사 패턴 설정 화면
-/// 
+///
 /// 사용자의 하루 식사 패턴(횟수, 시간)을 설정합니다.
 /// 온보딩 및 기존 사용자 모두 사용 가능합니다.
 class MealPatternSetupScreen extends StatefulWidget {
   final Map<String, dynamic>? initialPattern;
   final bool isOnboarding;
-  
+
   const MealPatternSetupScreen({
     super.key,
     this.initialPattern,
@@ -26,7 +27,7 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     if (widget.initialPattern != null) {
       // 기존 패턴 로드
       _loadExistingPattern();
@@ -38,12 +39,13 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
 
   void _loadExistingPattern() {
     final pattern = widget.initialPattern!;
-    final meals = (pattern['meals'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    
+    final meals =
+        (pattern['meals'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
     setState(() {
       _meals = List.from(meals);
       _includeSnacks = (pattern['snacks'] as List?)?.isNotEmpty ?? false;
-      
+
       // 프리셋 감지
       if (meals.length == 2) {
         _selectedPreset = '2meals';
@@ -60,7 +62,7 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
   void _applyPreset(String preset) {
     setState(() {
       _selectedPreset = preset;
-      
+
       switch (preset) {
         case '2meals':
           _meals = [
@@ -117,7 +119,7 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
       context: context,
       initialTime: TimeOfDay(hour: meal['hour'], minute: meal['minute']),
     );
-    
+
     if (picked != null) {
       setState(() {
         _meals[index]['hour'] = picked.hour;
@@ -136,10 +138,12 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
     return {
       'mealsPerDay': _meals.length,
       'meals': _meals,
-      'snacks': _includeSnacks ? [
-        {'type': 'morning', 'enabled': false, 'hour': 10, 'minute': 30},
-        {'type': 'afternoon', 'enabled': false, 'hour': 15, 'minute': 30},
-      ] : [],
+      'snacks': _includeSnacks
+          ? [
+              {'type': 'morning', 'enabled': false, 'hour': 10, 'minute': 30},
+              {'type': 'afternoon', 'enabled': false, 'hour': 15, 'minute': 30},
+            ]
+          : [],
     };
   }
 
@@ -150,9 +154,10 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('식사 패턴 설정'),
+        title: Text(l10n.mealPatternSetup),
         automaticallyImplyLeading: !widget.isOnboarding,
       ),
       body: SafeArea(
@@ -164,25 +169,31 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '하루 식사 패턴을 알려주세요',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.mealPatternTitle,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      '맞춤형 알림을 위해 식사 시간을 설정해주세요',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    Text(
+                      l10n.mealPatternSubtitle,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // 프리셋 선택
                     _buildPresetSelector(),
                     const SizedBox(height: 24),
-                    
+
                     // 식사 목록
-                    const Text(
-                      '식사 시간',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.mealTimes,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ..._meals.asMap().entries.map((entry) {
@@ -190,29 +201,29 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
                       final meal = entry.value;
                       return _buildMealTile(index, meal);
                     }),
-                    
+
                     // 커스텀 모드에서 식사 추가 버튼
                     if (_selectedPreset == 'custom') ...[
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
                         onPressed: _addMeal,
                         icon: const Icon(Icons.add),
-                        label: const Text('식사 추가'),
+                        label: Text(l10n.addMeal),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 48),
                         ),
                       ),
                     ],
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // 간식 옵션
                     _buildSnackOption(),
                   ],
                 ),
               ),
             ),
-            
+
             // 저장 버튼
             Padding(
               padding: const EdgeInsets.all(20),
@@ -221,7 +232,7 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                 ),
-                child: Text(widget.isOnboarding ? '다음' : '저장'),
+                child: Text(widget.isOnboarding ? l10n.next : l10n.save),
               ),
             ),
           ],
@@ -231,21 +242,22 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
   }
 
   Widget _buildPresetSelector() {
+    final l10n = AppLocalizations.of(context)!;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        _buildPresetChip('2식', '2meals'),
-        _buildPresetChip('3식 (권장)', '3meals'),
-        _buildPresetChip('4식+', '4meals'),
-        _buildPresetChip('커스텀', 'custom'),
+        _buildPresetChip(l10n.meals2Preset, '2meals'),
+        _buildPresetChip(l10n.meals3Preset, '3meals'),
+        _buildPresetChip(l10n.meals4Preset, '4meals'),
+        _buildPresetChip(l10n.customPreset, 'custom'),
       ],
     );
   }
 
   Widget _buildPresetChip(String label, String value) {
     final isSelected = _selectedPreset == value;
-    
+
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
@@ -258,16 +270,18 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
   }
 
   Widget _buildMealTile(int index, Map<String, dynamic> meal) {
-    final timeString = '${meal['hour'].toString().padLeft(2, '0')}:${meal['minute'].toString().padLeft(2, '0')}';
-    
+    final l10n = AppLocalizations.of(context)!;
+    final timeString =
+        '${meal['hour'].toString().padLeft(2, '0')}:${meal['minute'].toString().padLeft(2, '0')}';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: const Icon(Icons.restaurant),
         title: TextField(
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             border: InputBorder.none,
-            hintText: '식사 이름',
+            hintText: l10n.mealNameHint,
           ),
           controller: TextEditingController(text: meal['name']),
           onChanged: (value) => _updateMealName(index, value),
@@ -293,9 +307,10 @@ class _MealPatternSetupScreenState extends State<MealPatternSetupScreen> {
   }
 
   Widget _buildSnackOption() {
+    final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      title: const Text('간식 알림'),
-      subtitle: const Text('오전/오후 간식 시간 알림을 받을 수 있어요'),
+      title: Text(l10n.snackNotifications),
+      subtitle: Text(l10n.snackNotificationsDesc),
       value: _includeSnacks,
       onChanged: (value) {
         setState(() {

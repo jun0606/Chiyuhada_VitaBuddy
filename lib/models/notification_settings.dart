@@ -24,10 +24,7 @@ class SupplementAlarm {
   factory SupplementAlarm.fromMap(Map<String, dynamic> map) {
     return SupplementAlarm(
       name: map['name'] as String,
-      time: TimeOfDay(
-        hour: map['hour'] as int,
-        minute: map['minute'] as int,
-      ),
+      time: TimeOfDay(hour: map['hour'] as int, minute: map['minute'] as int),
       enabled: map['enabled'] as bool? ?? false,
     );
   }
@@ -70,7 +67,7 @@ class NotificationSettings {
   TimeOfDay waterStartTime;
   TimeOfDay waterEndTime;
   int dailyWaterGoal; // ml
-  
+
   // 알림 민감도 (low, normal, high)
   String alertSensitivity;
 
@@ -97,8 +94,8 @@ class NotificationSettings {
     this.waterEndTime = const TimeOfDay(hour: 22, minute: 0),
     this.dailyWaterGoal = 2000,
     this.alertSensitivity = 'normal',
-  })  : exerciseDays = exerciseDays ?? [1, 3, 5], // 기본: 월수금
-        supplements = supplements ?? [];
+  }) : exerciseDays = exerciseDays ?? [1, 3, 5], // 기본: 월수금
+       supplements = supplements ?? [];
 
   Map<String, dynamic> toMap() {
     return {
@@ -128,7 +125,8 @@ class NotificationSettings {
       'waterReminderEnabled': waterReminderEnabled,
       'waterInterval': waterInterval,
       'waterStartHour': waterStartTime.hour,
-      'waterStartMinute': waterStartTime.minute,
+      'waterStartMinute': waterStartTime.minute, // Added missing minute
+      'waterEndHour': waterEndTime.hour,
       'waterEndMinute': waterEndTime.minute,
       'dailyWaterGoal': dailyWaterGoal,
       'alertSensitivity': alertSensitivity,
@@ -179,7 +177,8 @@ class NotificationSettings {
         hour: map['weightHour'] as int? ?? 6,
         minute: map['weightMinute'] as int? ?? 30,
       ),
-      supplements: (map['supplements'] as List?)
+      supplements:
+          (map['supplements'] as List?)
               ?.map((s) => SupplementAlarm.fromMap(s as Map<String, dynamic>))
               .toList() ??
           [],

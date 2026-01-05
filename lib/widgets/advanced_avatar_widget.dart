@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../avatar/body_measurements.dart';
 import '../avatar/avatar_animator.dart';
 import '../avatar/clothing_colors.dart';
@@ -130,13 +131,20 @@ class _AdvancedAvatarWidgetState extends State<AdvancedAvatarWidget> {
               width: widget.width,
               height: widget.heightSize,
               color: Colors.grey[200],
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red, size: 48),
-                    SizedBox(height: 8),
-                    Text('아바타 로드 실패', style: TextStyle(color: Colors.red)),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context)!.avatarLoadFailed,
+                      style: const TextStyle(color: Colors.red),
+                    ),
                   ],
                 ),
               ),
@@ -151,13 +159,16 @@ class _AdvancedAvatarWidgetState extends State<AdvancedAvatarWidget> {
         width: widget.width,
         height: widget.heightSize,
         color: Colors.grey[200],
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 48),
-              SizedBox(height: 8),
-              Text('아바타 빌드 실패', style: TextStyle(color: Colors.red)),
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 8),
+              Text(
+                AppLocalizations.of(context)!.avatarBuildFailed,
+                style: const TextStyle(color: Colors.red),
+              ),
             ],
           ),
         ),

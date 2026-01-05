@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -55,7 +58,7 @@ dependencies:
   # geolocator: ^12.0.0    # 현재 사용하지 않음
 
   # 건강 및 운동
-  health: ^13.2.1
+  # health: ^13.2.1  # Health Connect SDK로 직접 구현하여 제거
 
   # 애니메이션
   flame: ^1.18.0
@@ -67,11 +70,8 @@ dependencies:
   # 인터넷 및 URL
   url_launcher: ^6.3.0
 
-  # 국제화 및 저장
-  intl: ^0.20.2
+  # 국제화 및 저장 (flutter_localizations는 상단에 선언됨)
   shared_preferences: ^2.3.2
-  flutter_localizations:
-    sdk: flutter
 
   # 권한 및 연결
   permission_handler: ^11.3.1
@@ -107,6 +107,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

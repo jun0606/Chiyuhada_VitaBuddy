@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../utils/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 import 'history_detail_screen.dart'; // 상세 화면 import
 
@@ -33,50 +34,58 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          '기록',
-          style: TextStyle(color: AppColors.text, fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context)!.history,
+          style: const TextStyle(
+            color: AppColors.text,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.text),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _historyFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _historyFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('오류 발생: ${snapshot.error}'));
-          }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  '${AppLocalizations.of(context)!.errorOccurred}: ${snapshot.error}',
+                ),
+              );
+            }
 
-          final history = snapshot.data ?? [];
+            final history = snapshot.data ?? [];
 
-          if (history.isEmpty) {
-            return const Center(
-              child: Text(
-                '아직 기록이 없습니다.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
+            if (history.isEmpty) {
+              return Center(
+                child: Text(
+                  AppLocalizations.of(context)!.noRecords,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: history.length,
+              itemBuilder: (context, index) {
+                final item = history[index];
+                return _buildHistoryCard(item);
+              },
             );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: history.length,
-            itemBuilder: (context, index) {
-              final item = history[index];
-              return _buildHistoryCard(item);
-            },
-          );
-        },
+          },
+        ),
       ),
     );
   }
-
 
   Widget _buildHistoryCard(Map<String, dynamic> item) {
     final date = item['date'] as String;
@@ -89,10 +98,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => HistoryDetailScreen(
-              date: date,
-              summaryData: item,
-            ),
+            builder: (_) => HistoryDetailScreen(date: date, summaryData: item),
           ),
         );
       },
@@ -125,18 +131,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     color: AppColors.text,
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // 데이터 행
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildInfoColumn('섭취', '${intake.toInt()} kcal', AppColors.primary),
-                _buildInfoColumn('소비', '${burned.toInt()} kcal', Colors.orange),
-                _buildInfoColumn('체중', weight != null ? '${weight.toStringAsFixed(1)} kg' : '-', Colors.blue),
+                _buildInfoColumn(
+                  AppLocalizations.of(context)!.intakeLabel,
+                  '${intake.toInt()} kcal',
+                  AppColors.primary,
+                ),
+                _buildInfoColumn(
+                  AppLocalizations.of(context)!.burnedLabel,
+                  '${burned.toInt()} kcal',
+                  Colors.orange,
+                ),
+                _buildInfoColumn(
+                  AppLocalizations.of(context)!.weight,
+                  weight != null ? '${weight.toStringAsFixed(1)} kg' : '-',
+                  Colors.blue,
+                ),
               ],
             ),
           ],
@@ -150,10 +172,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 4),
         Text(
