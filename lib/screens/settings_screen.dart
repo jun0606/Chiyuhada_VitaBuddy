@@ -208,6 +208,62 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
+            // 카메라 권한 설정 추가
+            _buildSettingsItem(
+              context,
+              '카메라 권한',
+              Icons.camera_alt_rounded,
+              () async {
+                final cameraStatus = await Permission.camera.status;
+
+                if (cameraStatus.isGranted) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('카메라 권한이 이미 허용되어 있습니다')),
+                    );
+                  }
+                  return;
+                }
+
+                // 권한 요청
+                final status = await Permission.camera.request();
+
+                if (status.isGranted) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('카메라 권한이 허용되었습니다')),
+                    );
+                  }
+                } else {
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('카메라 권한 필요'),
+                        content: const Text(
+                          '바코드 스캔 기능을 사용하기 위해 카메라 권한이 필요합니다.\n\n'
+                          '설정 → 앱 → VitaBuddy → 권한 → 카메라에서 허용해주세요.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('취소'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              openAppSettings();
+                            },
+                            child: const Text('설정으로 이동'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 12),
             _buildSettingsItem(
               context,
               l10n.healthDataPermission,
