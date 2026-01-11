@@ -844,5 +844,84 @@
   "enterValidCaloriesDialog": "올바른 칼로리 값을 입력해주세요",
   "calorieInfoNotFound": "이 음식의 칼로리 정보를 찾을 수 없습니다.\n구글에서 검색하거나 직접 입력해주세요.",
   "searchGoogle": "구글에서 검색",
+  "consumedOn": "섭취일: {date}",
+  "@consumedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "localSearch": "로컬 검색",
+  "onlineSearch": "인터넷 검색",
+  "searchOnlineHint": "인터넷에서 음식 검색...",
+  "quantityLabel": "수량:",
+  "cameraPermissionRequired": "카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.",
+  "noCameraAvailable": "사용 가능한 카메라가 없습니다.",
+  "cameraInitFailed": "카메라 초기화에 실패했습니다: {error}",
+  "@cameraInitFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cameraInitializing": "카메라 초기화 중...",
+  "cameraReady": "카메라 준비 중...",
+  "barcodeDetected": "바코드 감지됨!",
+  "pointCameraAtBarcode": "바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)",
+  "barcodeVerified": "바코드 검증 완료!",
+  "invalidBarcode": "유효하지 않은 바코드",
+  "type": "타입",
+  "confidence": "신뢰도",
+  "scanCount": "스캔 횟수",
+  "confirm": "확인",
+  "accept": "사용",
+  "rescan": "재스캔",
+  "requestPermission": "권한 요청",
+  "openSettings": "설정으로 이동",
+  "supportedFormats": "지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)",
+  "flashToggle": "플래시 토글",
+  "barcodeScan": "바코드 스캔",
+  "confidenceLabel": "신뢰도",
+  "scanCountLabel": "스캔 횟수",
+  "checkingCameraPermission": "카메라 권한을 확인하는 중...",
+  "brandLabel": "브랜드",
+  "apiResultsFound": "총 {count}개의 결과를 찾았습니다.",
+  "@apiResultsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foodNotFoundInDatabase": "{apiName} 데이터베이스에서 이 음식을 찾을 수 없습니다.",
+  "@foodNotFoundInDatabase": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyRequired": "설정에서 {apiName} API 키를 입력하면 더 정확한 검색이 가능합니다.",
+  "@apiKeyRequired": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiSearchError": "{apiName} 검색 중 오류가 발생했습니다.",
+  "@apiSearchError": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "noDataStatus": "데이터 없음",
+  "dataNotFoundTitle": "데이터에 없음",
+  "settingsRequired": "설정 필요",
+  "errorStatus": "오류",
   "save": "저장"
 }

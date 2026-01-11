@@ -702,6 +702,85 @@
   "recommendedWaterIntake": "推奨水分摂取量",
   "recommendedBasedOnProfile": "体重と活動量に基づいて計算された推奨量です",
   "yourDailyGoal": "1日の目標",
+  "consumedOn": "摂取日: {date}",
+  "@consumedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "localSearch": "ローカル検索",
+  "onlineSearch": "インターネット検索",
+  "searchOnlineHint": "インターネットで食材を検索...",
+  "quantityLabel": "数量:",
+  "cameraPermissionRequired": "カメラ権限が必要です。設定で権限を許可してください。",
+  "noCameraAvailable": "利用可能なカメラがありません。",
+  "cameraInitFailed": "カメラの初期化に失敗しました: {error}",
+  "@cameraInitFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cameraInitializing": "カメラを初期化中...",
+  "cameraReady": "カメラ準備完了...",
+  "barcodeDetected": "バーコードを検知しました！",
+  "pointCameraAtBarcode": "バーコードにカメラを向けてください\n（どのバーコードでも認識されます）",
+  "barcodeVerified": "バーコードが検証されました！",
+  "invalidBarcode": "無効なバーコード",
+  "type": "タイプ",
+  "confidence": "信頼度",
+  "scanCount": "スキャン回数",
+  "confirm": "確認",
+  "accept": "使用",
+  "rescan": "再スキャン",
+  "requestPermission": "権限をリクエスト",
+  "openSettings": "設定を開く",
+  "supportedFormats": "サポートされている形式: QRコード、バーコード（EAN-13、UPC-Aなど）",
+  "flashToggle": "フラッシュ切り替え",
+  "barcodeScan": "バーコードスキャン",
+  "confidenceLabel": "信頼度",
+  "scanCountLabel": "スキャン回数",
+  "checkingCameraPermission": "カメラ権限を確認中...",
+  "brandLabel": "ブランド",
+  "apiResultsFound": "合計{count}件の結果が見つかりました。",
+  "@apiResultsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foodNotFoundInDatabase": "{apiName}データベースでこの食品が見つかりませんでした。",
+  "@foodNotFoundInDatabase": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyRequired": "より正確な検索のために設定で{apiName}APIキーを入力してください。",
+  "@apiKeyRequired": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiSearchError": "{apiName}の検索中にエラーが発生しました。",
+  "@apiSearchError": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "noDataStatus": "データなし",
+  "dataNotFoundTitle": "データにない",
+  "settingsRequired": "設定が必要",
+  "errorStatus": "エラー",
   "canAdjustManually": "手動で調整できます（1000〜5000ml）",
   "useRecommendedAmount": "推奨量を適用"
 }

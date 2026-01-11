@@ -656,5 +656,84 @@
   "clearPermissionCache": "Kosongkan Cache Kebenaran",
   "permissionCacheCleared": "Cache kebenaran telah dikosongkan. Sila mulakan semula aplikasi.",
   "syncingHealthData": "Menyegerakkan data kesihatan...",
+  "consumedOn": "Tarikh pengambilan: {date}",
+  "@consumedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "localSearch": "Carian Tempatan",
+  "onlineSearch": "Carian Dalam Talian",
+  "searchOnlineHint": "Cari makanan dalam talian...",
+  "quantityLabel": "Kuantiti:",
+  "cameraPermissionRequired": "Kebenaran kamera diperlukan. Sila benarkan dalam tetapan.",
+  "noCameraAvailable": "Tiada kamera tersedia.",
+  "cameraInitFailed": "Permulaan kamera gagal: {error}",
+  "@cameraInitFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cameraInitializing": "Memulakan kamera...",
+  "cameraReady": "Kamera sedia...",
+  "barcodeDetected": "Barcode dikesan!",
+  "pointCameraAtBarcode": "Arahkan kamera ke barcode\n(Sebarang barcode akan dikenali)",
+  "barcodeVerified": "Barcode disahkan!",
+  "invalidBarcode": "Barcode tidak sah",
+  "type": "Jenis",
+  "confidence": "Keyakinan",
+  "scanCount": "Bilangan imbasan",
+  "confirm": "Sahkan",
+  "accept": "Terima",
+  "rescan": "Imbas semula",
+  "requestPermission": "Minta Kebenaran",
+  "openSettings": "Buka Tetapan",
+  "supportedFormats": "Format yang disokong: Kod QR, barcode (EAN-13, UPC-A, dll.)",
+  "flashToggle": "Togol Flash",
+  "barcodeScan": "Imbas Kod Bar",
+  "confidenceLabel": "Keyakinan",
+  "scanCountLabel": "Bilangan Pemindaian",
+  "checkingCameraPermission": "Memeriksa izin kamera...",
+  "brandLabel": "Jenama",
+  "apiResultsFound": "Jumlah {count} hasil dijumpai.",
+  "@apiResultsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foodNotFoundInDatabase": "Makanan ini tidak dapat dijumpai di pangkalan data {apiName}.",
+  "@foodNotFoundInDatabase": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyRequired": "Masukkan kunci API {apiName} dalam tetapan untuk carian yang lebih tepat.",
+  "@apiKeyRequired": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiSearchError": "Ralat berlaku semasa mencari {apiName}.",
+  "@apiSearchError": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "noDataStatus": "Tiada data",
+  "dataNotFoundTitle": "Tiada dalam data",
+  "settingsRequired": "Tetapan diperlukan",
+  "errorStatus": "Ralat",
   "close": "Tutup"
 }

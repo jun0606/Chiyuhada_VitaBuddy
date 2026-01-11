@@ -1264,7 +1264,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String consumedOn(String date) {
-    return '섭취일: $date';
+    return 'Recently eaten: $date';
   }
 
   @override
@@ -1793,54 +1793,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useRecommendedAmount => 'Use Recommended Amount';
 
   @override
-  String get barcodeScan => '바코드 스캔';
+  String get barcodeScan => 'Barcode Scan';
 
   @override
-  String get cameraPermissionRequired => '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+  String get cameraPermissionRequired =>
+      'Camera permission is required. Please allow it in settings.';
 
   @override
-  String get cameraInitializing => '카메라 초기화 중...';
+  String get cameraInitializing => 'Initializing camera...';
 
   @override
   String cameraInitFailed(String error) {
-    return '카메라 초기화에 실패했습니다: $error';
+    return 'Camera initialization failed: $error';
   }
 
   @override
-  String get barcodeDetected => '바코드 감지됨!';
+  String get barcodeDetected => 'Barcode detected!';
 
   @override
-  String get pointCameraAtBarcode => '바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)';
+  String get pointCameraAtBarcode =>
+      'Point camera at barcode\n(Any barcode will be recognized)';
 
   @override
-  String get barcodeVerified => '바코드 검증 완료!';
+  String get barcodeVerified => 'Barcode verified!';
 
   @override
-  String get invalidBarcode => '유효하지 않은 바코드';
+  String get invalidBarcode => 'Invalid barcode';
 
   @override
-  String get type => '타입';
+  String get type => 'Type';
 
   @override
-  String get confidence => '신뢰도';
+  String get confidence => 'Confidence';
 
   @override
-  String get scanCount => '스캔 횟수';
+  String get scanCount => 'Scan count';
 
   @override
-  String get accept => '사용';
+  String get accept => 'Accept';
 
   @override
-  String get rescan => '재스캔';
+  String get rescan => 'Rescan';
 
   @override
-  String get supportedFormats => '지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)';
+  String get supportedFormats =>
+      'Supported formats: QR codes, barcodes (EAN-13, UPC-A, etc.)';
 
   @override
-  String get localSearch => '로컬 검색';
+  String get localSearch => 'Local Search';
 
   @override
-  String get onlineSearch => '인터넷 검색';
+  String get onlineSearch => 'Online Search';
 
   @override
   String get barcodeSearching => '바코드 검색 중...';
@@ -1894,13 +1897,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get barcodeFormatUnknown => '알 수 없는 형식';
 
   @override
-  String get searchOnlineHint => '인터넷에서 음식 검색...';
+  String get searchOnlineHint => 'Search food online...';
 
   @override
   String get search100gHint => '100g당 입력은 검색 탭을 이용해주세요.';
 
   @override
-  String get quantityLabel => '수량:';
+  String get quantityLabel => 'Quantity:';
 
   @override
   String equalsCalories(int calories) {
@@ -1919,4 +1922,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchGoogle => '구글에서 검색';
+
+  @override
+  String get noCameraAvailable => 'No available camera.';
+
+  @override
+  String get cameraReady => 'Camera ready...';
+
+  @override
+  String get requestPermission => 'Request Permission';
+
+  @override
+  String get openSettings => 'Open Settings';
+
+  @override
+  String get flashToggle => 'Flash Toggle';
+
+  @override
+  String get confidenceLabel => 'Confidence';
+
+  @override
+  String get scanCountLabel => 'Scan Count';
+
+  @override
+  String get checkingCameraPermission => 'Checking camera permission...';
+
+  @override
+  String get brandLabel => 'Brand';
+
+  @override
+  String apiResultsFound(int count) {
+    return 'Found $count results in total.';
+  }
+
+  @override
+  String foodNotFoundInDatabase(String apiName) {
+    return 'This food could not be found in the $apiName database.';
+  }
+
+  @override
+  String apiKeyRequired(String apiName) {
+    return 'Enter the $apiName API key in settings for more accurate search.';
+  }
+
+  @override
+  String apiSearchError(String apiName) {
+    return 'An error occurred while searching $apiName.';
+  }
+
+  @override
+  String get noDataStatus => 'No data';
+
+  @override
+  String get dataNotFoundTitle => 'Not found in data';
+
+  @override
+  String get settingsRequired => 'Settings required';
+
+  @override
+  String get errorStatus => 'Error';
 }

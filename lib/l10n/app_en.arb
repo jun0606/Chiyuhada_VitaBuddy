@@ -699,5 +699,92 @@
   "recommendedBasedOnProfile": "Calculated based on your weight and activity level",
   "yourDailyGoal": "Your Daily Goal",
   "canAdjustManually": "You can adjust manually (1000~5000ml)",
+  "consumedOn": "Recently eaten: {date}",
+  "@consumedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "consumedOn": "Recently eaten: {date}",
+  "@consumedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "localSearch": "Local Search",
+  "onlineSearch": "Online Search",
+  "searchOnlineHint": "Search food online...",
+  "quantityLabel": "Quantity:",
+  "cameraPermissionRequired": "Camera permission is required. Please allow it in settings.",
+  "noCameraAvailable": "No available camera.",
+  "cameraInitFailed": "Camera initialization failed: {error}",
+  "@cameraInitFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cameraInitializing": "Initializing camera...",
+  "cameraReady": "Camera ready...",
+  "barcodeDetected": "Barcode detected!",
+  "pointCameraAtBarcode": "Point camera at barcode\n(Any barcode will be recognized)",
+  "barcodeVerified": "Barcode verified!",
+  "invalidBarcode": "Invalid barcode",
+  "type": "Type",
+  "confidence": "Confidence",
+  "scanCount": "Scan count",
+  "confirm": "Confirm",
+  "accept": "Accept",
+  "rescan": "Rescan",
+  "requestPermission": "Request Permission",
+  "openSettings": "Open Settings",
+  "supportedFormats": "Supported formats: QR codes, barcodes (EAN-13, UPC-A, etc.)",
+  "flashToggle": "Flash Toggle",
+  "barcodeScan": "Barcode Scan",
+  "confidenceLabel": "Confidence",
+  "scanCountLabel": "Scan Count",
+  "checkingCameraPermission": "Checking camera permission...",
+  "brandLabel": "Brand",
+  "apiResultsFound": "Found {count} results in total.",
+  "@apiResultsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foodNotFoundInDatabase": "This food could not be found in the {apiName} database.",
+  "@foodNotFoundInDatabase": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyRequired": "Enter the {apiName} API key in settings for more accurate search.",
+  "@apiKeyRequired": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiSearchError": "An error occurred while searching {apiName}.",
+  "@apiSearchError": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "noDataStatus": "No data",
+  "dataNotFoundTitle": "Not found in data",
+  "settingsRequired": "Settings required",
+  "errorStatus": "Error",
   "useRecommendedAmount": "Use Recommended Amount"
 }

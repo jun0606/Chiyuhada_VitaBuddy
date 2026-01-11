@@ -73,7 +73,9 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
       if (!status.isGranted) {
         setState(() {
           _hasPermission = false;
-          _errorMessage = '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+          _errorMessage =
+              AppLocalizations.of(context)?.cameraPermissionRequired ??
+              '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
         });
         return;
       }
@@ -84,7 +86,9 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         setState(() {
-          _errorMessage = '사용 가능한 카메라가 없습니다.';
+          _errorMessage =
+              AppLocalizations.of(context)?.noCameraAvailable ??
+              '사용 가능한 카메라가 없습니다.';
         });
         return;
       }
@@ -115,7 +119,9 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
     } catch (e) {
       print('카메라 초기화 실패: $e');
       setState(() {
-        _errorMessage = '카메라 초기화에 실패했습니다: $e';
+        _errorMessage =
+            AppLocalizations.of(context)?.cameraInitFailed(e.toString()) ??
+            '카메라 초기화에 실패했습니다: $e';
       });
     }
   }
@@ -357,9 +363,12 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
 
   /// 상태별 텍스트 반환 (간소화)
   String get _statusText {
-    if (!_isInitialized) return '카메라 준비 중...';
-    if (_hasDetectedBarcode) return '바코드 감지됨!';
-    return '바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)';
+    if (!_isInitialized)
+      return AppLocalizations.of(context)?.cameraInitializing ?? '카메라 초기화 중...';
+    if (_hasDetectedBarcode)
+      return AppLocalizations.of(context)?.barcodeDetected ?? '바코드 감지됨!';
+    return AppLocalizations.of(context)?.pointCameraAtBarcode ??
+        '바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)';
   }
 
   @override
@@ -375,7 +384,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
           IconButton(
             icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
             onPressed: _toggleFlash,
-            tooltip: '플래시 토글',
+            tooltip: AppLocalizations.of(context)?.flashToggle ?? '플래시 토글',
           ),
           IconButton(icon: const Icon(Icons.close), onPressed: widget.onClose),
         ],
@@ -424,7 +433,11 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
 
                     // 제목
                     Text(
-                      isValid ? '바코드 검증 완료!' : '유효하지 않은 바코드',
+                      isValid
+                          ? AppLocalizations.of(context)?.barcodeVerified ??
+                                '바코드 검증 완료!'
+                          : AppLocalizations.of(context)?.invalidBarcode ??
+                                '유효하지 않은 바코드',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -486,7 +499,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '신뢰도: ${result.confidence}%',
+                                '${AppLocalizations.of(context)?.confidenceLabel ?? '신뢰도'}: ${result.confidence}%',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
@@ -507,7 +520,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '스캔 횟수: ${result.scanCount}회',
+                                '${AppLocalizations.of(context)?.scanCountLabel ?? '스캔 횟수'}: ${result.scanCount}회',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
@@ -533,7 +546,11 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
                   child: ElevatedButton.icon(
                     onPressed: _confirmBarcode, // 검증 실패해도 확인 가능
                     icon: const Icon(Icons.check),
-                    label: Text(isValid ? '확인' : '사용'), // 라벨 변경
+                    label: Text(
+                      isValid
+                          ? AppLocalizations.of(context)?.confirm ?? '확인'
+                          : AppLocalizations.of(context)?.accept ?? '사용',
+                    ), // 라벨 변경
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isValid ? Colors.green : Colors.orange,
                       foregroundColor: Colors.white,
@@ -546,7 +563,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
                   child: OutlinedButton.icon(
                     onPressed: _rescanBarcode,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('재스캔'),
+                    label: Text(AppLocalizations.of(context)?.rescan ?? '재스캔'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -570,19 +587,25 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
             const Icon(Icons.camera_alt, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              _errorMessage ?? '카메라 권한을 확인하는 중...',
+              _errorMessage ??
+                  AppLocalizations.of(context)?.checkingCameraPermission ??
+                  '카메라 권한을 확인하는 중...',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _initializeCamera,
-              child: const Text('권한 요청'),
+              child: Text(
+                AppLocalizations.of(context)?.requestPermission ?? '권한 요청',
+              ),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: openAppSettings,
-              child: const Text('설정으로 이동'),
+              child: Text(
+                AppLocalizations.of(context)?.openSettings ?? '설정으로 이동',
+              ),
             ),
           ],
         ),
@@ -590,13 +613,16 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
     }
 
     if (!_isInitialized || _cameraController == null) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('카메라 초기화 중...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context)?.cameraInitializing ??
+                  '카메라 초기화 중...',
+            ),
           ],
         ),
       );
@@ -610,33 +636,44 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
         // 스캔 오버레이
         CustomPaint(painter: _ScannerOverlayPainter(), child: Container()),
 
-        // 하단 안내 텍스트
+        // 하단 안내 텍스트 - SafeArea 적용으로 시스템 UI와 겹침 방지
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          child: Container(
-            color: Colors.black54,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _statusText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+          child: SafeArea(
+            top: false, // 상단은 이미 카메라 뷰이므로 false
+            bottom: true, // 하단 시스템 UI 고려
+            child: Container(
+              color: Colors.black54,
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom:
+                    16 + MediaQuery.of(context).padding.bottom, // 시스템 하단 패딩 추가
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _statusText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLocalizations.of(context)?.supportedFormats ??
+                        '지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

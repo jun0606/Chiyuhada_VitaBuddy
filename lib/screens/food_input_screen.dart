@@ -1406,7 +1406,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${apiResult.displayName} (${apiResult.statusText})',
+                  '${apiResult.displayName} (${_getLocalizedStatusText(context, apiResult)})',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: apiResult.textColor,
@@ -1435,14 +1435,14 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       child: ListTile(
         leading: Icon(apiResult.statusIcon, color: apiResult.textColor),
         title: Text(
-          apiResult.statusTitle,
+          _getLocalizedStatusTitle(context, apiResult),
           style: TextStyle(
             color: apiResult.textColor,
             fontWeight: FontWeight.w500,
           ),
         ),
         subtitle: Text(
-          apiResult.statusDescription,
+          _getLocalizedApiStatusDescription(context, apiResult),
           style: TextStyle(color: apiResult.textColor.withOpacity(0.8)),
         ),
         onTap: apiResult.status == SearchStatus.notConfigured
@@ -1460,6 +1460,63 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
     ).then((_) {
       // 설정에서 돌아왔을 때 검색 재시도 가능하도록 상태 업데이트 필요 시 처리
     });
+  }
+
+  /// API 상태 설명 번역 헬퍼 메소드
+  String _getLocalizedApiStatusDescription(
+    BuildContext context,
+    ApiSearchResult apiResult,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (apiResult.status) {
+      case SearchStatus.success:
+        return l10n.apiResultsFound(apiResult.results.length);
+      case SearchStatus.noData:
+        return l10n.foodNotFoundInDatabase(apiResult.displayName);
+      case SearchStatus.notConfigured:
+        return l10n.apiKeyRequired(apiResult.displayName);
+      case SearchStatus.error:
+        return l10n.apiSearchError(apiResult.displayName);
+    }
+  }
+
+  /// API 상태 텍스트 번역 헬퍼 메소드
+  String _getLocalizedStatusText(
+    BuildContext context,
+    ApiSearchResult apiResult,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (apiResult.status) {
+      case SearchStatus.success:
+        return '${apiResult.results.length}개';
+      case SearchStatus.noData:
+        return l10n.noDataStatus;
+      case SearchStatus.notConfigured:
+        return l10n.settingsRequired;
+      case SearchStatus.error:
+        return l10n.errorStatus;
+    }
+  }
+
+  /// API 상태 제목 번역 헬퍼 메소드
+  String _getLocalizedStatusTitle(
+    BuildContext context,
+    ApiSearchResult apiResult,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (apiResult.status) {
+      case SearchStatus.success:
+        return '검색 결과';
+      case SearchStatus.noData:
+        return l10n.dataNotFoundTitle;
+      case SearchStatus.notConfigured:
+        return 'API 키 설정 필요';
+      case SearchStatus.error:
+        return '검색 실패';
+    }
   }
 
   /// 인터넷 검색 음식 아이템
@@ -1513,7 +1570,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
                   ),
                 if (food.brand != null)
                   Text(
-                    '브랜드: ${food.brand}',
+                    '${AppLocalizations.of(context)?.brandLabel ?? '브랜드'}: ${food.brand}',
                     style: TextStyle(
                       fontSize: 12,
                       color: food.sourceTextColor.withOpacity(0.7),

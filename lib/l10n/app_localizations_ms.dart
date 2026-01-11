@@ -1268,7 +1268,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String consumedOn(String date) {
-    return '섭취일: $date';
+    return 'Tarikh pengambilan: $date';
   }
 
   @override
@@ -1799,54 +1799,57 @@ class AppLocalizationsMs extends AppLocalizations {
   String get useRecommendedAmount => '권장량 적용';
 
   @override
-  String get barcodeScan => '바코드 스캔';
+  String get barcodeScan => 'Imbas Kod Bar';
 
   @override
-  String get cameraPermissionRequired => '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+  String get cameraPermissionRequired =>
+      'Kebenaran kamera diperlukan. Sila benarkan dalam tetapan.';
 
   @override
-  String get cameraInitializing => '카메라 초기화 중...';
+  String get cameraInitializing => 'Memulakan kamera...';
 
   @override
   String cameraInitFailed(String error) {
-    return '카메라 초기화에 실패했습니다: $error';
+    return 'Permulaan kamera gagal: $error';
   }
 
   @override
-  String get barcodeDetected => '바코드 감지됨!';
+  String get barcodeDetected => 'Barcode dikesan!';
 
   @override
-  String get pointCameraAtBarcode => '바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)';
+  String get pointCameraAtBarcode =>
+      'Arahkan kamera ke barcode\n(Sebarang barcode akan dikenali)';
 
   @override
-  String get barcodeVerified => '바코드 검증 완료!';
+  String get barcodeVerified => 'Barcode disahkan!';
 
   @override
-  String get invalidBarcode => '유효하지 않은 바코드';
+  String get invalidBarcode => 'Barcode tidak sah';
 
   @override
-  String get type => '타입';
+  String get type => 'Jenis';
 
   @override
-  String get confidence => '신뢰도';
+  String get confidence => 'Keyakinan';
 
   @override
-  String get scanCount => '스캔 횟수';
+  String get scanCount => 'Bilangan imbasan';
 
   @override
-  String get accept => '사용';
+  String get accept => 'Terima';
 
   @override
-  String get rescan => '재스캔';
+  String get rescan => 'Imbas semula';
 
   @override
-  String get supportedFormats => '지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)';
+  String get supportedFormats =>
+      'Format yang disokong: Kod QR, barcode (EAN-13, UPC-A, dll.)';
 
   @override
-  String get localSearch => '로컬 검색';
+  String get localSearch => 'Carian Tempatan';
 
   @override
-  String get onlineSearch => '인터넷 검색';
+  String get onlineSearch => 'Carian Dalam Talian';
 
   @override
   String get barcodeSearching => '바코드 검색 중...';
@@ -1900,13 +1903,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get barcodeFormatUnknown => '알 수 없는 형식';
 
   @override
-  String get searchOnlineHint => '인터넷에서 음식 검색...';
+  String get searchOnlineHint => 'Cari makanan dalam talian...';
 
   @override
   String get search100gHint => '100g당 입력은 검색 탭을 이용해주세요.';
 
   @override
-  String get quantityLabel => '수량:';
+  String get quantityLabel => 'Kuantiti:';
 
   @override
   String equalsCalories(int calories) {
@@ -1925,4 +1928,63 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get searchGoogle => '구글에서 검색';
+
+  @override
+  String get noCameraAvailable => 'Tiada kamera tersedia.';
+
+  @override
+  String get cameraReady => 'Kamera sedia...';
+
+  @override
+  String get requestPermission => 'Minta Kebenaran';
+
+  @override
+  String get openSettings => 'Buka Tetapan';
+
+  @override
+  String get flashToggle => 'Togol Flash';
+
+  @override
+  String get confidenceLabel => 'Keyakinan';
+
+  @override
+  String get scanCountLabel => 'Bilangan Pemindaian';
+
+  @override
+  String get checkingCameraPermission => 'Memeriksa izin kamera...';
+
+  @override
+  String get brandLabel => 'Jenama';
+
+  @override
+  String apiResultsFound(int count) {
+    return 'Jumlah $count hasil dijumpai.';
+  }
+
+  @override
+  String foodNotFoundInDatabase(String apiName) {
+    return 'Makanan ini tidak dapat dijumpai di pangkalan data $apiName.';
+  }
+
+  @override
+  String apiKeyRequired(String apiName) {
+    return 'Masukkan kunci API $apiName dalam tetapan untuk carian yang lebih tepat.';
+  }
+
+  @override
+  String apiSearchError(String apiName) {
+    return 'Ralat berlaku semasa mencari $apiName.';
+  }
+
+  @override
+  String get noDataStatus => 'Tiada data';
+
+  @override
+  String get dataNotFoundTitle => 'Tiada dalam data';
+
+  @override
+  String get settingsRequired => 'Tetapan diperlukan';
+
+  @override
+  String get errorStatus => 'Ralat';
 }

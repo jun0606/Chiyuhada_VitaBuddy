@@ -3667,6 +3667,108 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'구글에서 검색'**
   String get searchGoogle;
+
+  /// No description provided for @noCameraAvailable.
+  ///
+  /// In ko, this message translates to:
+  /// **'사용 가능한 카메라가 없습니다.'**
+  String get noCameraAvailable;
+
+  /// No description provided for @cameraReady.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 준비 중...'**
+  String get cameraReady;
+
+  /// No description provided for @requestPermission.
+  ///
+  /// In ko, this message translates to:
+  /// **'권한 요청'**
+  String get requestPermission;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In ko, this message translates to:
+  /// **'설정으로 이동'**
+  String get openSettings;
+
+  /// No description provided for @flashToggle.
+  ///
+  /// In ko, this message translates to:
+  /// **'플래시 토글'**
+  String get flashToggle;
+
+  /// No description provided for @confidenceLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'신뢰도'**
+  String get confidenceLabel;
+
+  /// No description provided for @scanCountLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'스캔 횟수'**
+  String get scanCountLabel;
+
+  /// No description provided for @checkingCameraPermission.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 권한을 확인하는 중...'**
+  String get checkingCameraPermission;
+
+  /// No description provided for @brandLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'브랜드'**
+  String get brandLabel;
+
+  /// No description provided for @apiResultsFound.
+  ///
+  /// In ko, this message translates to:
+  /// **'총 {count}개의 결과를 찾았습니다.'**
+  String apiResultsFound(int count);
+
+  /// No description provided for @foodNotFoundInDatabase.
+  ///
+  /// In ko, this message translates to:
+  /// **'{apiName} 데이터베이스에서 이 음식을 찾을 수 없습니다.'**
+  String foodNotFoundInDatabase(String apiName);
+
+  /// No description provided for @apiKeyRequired.
+  ///
+  /// In ko, this message translates to:
+  /// **'설정에서 {apiName} API 키를 입력하면 더 정확한 검색이 가능합니다.'**
+  String apiKeyRequired(String apiName);
+
+  /// No description provided for @apiSearchError.
+  ///
+  /// In ko, this message translates to:
+  /// **'{apiName} 검색 중 오류가 발생했습니다.'**
+  String apiSearchError(String apiName);
+
+  /// No description provided for @noDataStatus.
+  ///
+  /// In ko, this message translates to:
+  /// **'데이터 없음'**
+  String get noDataStatus;
+
+  /// No description provided for @dataNotFoundTitle.
+  ///
+  /// In ko, this message translates to:
+  /// **'데이터에 없음'**
+  String get dataNotFoundTitle;
+
+  /// No description provided for @settingsRequired.
+  ///
+  /// In ko, this message translates to:
+  /// **'설정 필요'**
+  String get settingsRequired;
+
+  /// No description provided for @errorStatus.
+  ///
+  /// In ko, this message translates to:
+  /// **'오류'**
+  String get errorStatus;
 }
 
 class _AppLocalizationsDelegate

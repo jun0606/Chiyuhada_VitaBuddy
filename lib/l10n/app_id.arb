@@ -676,5 +676,84 @@
   "clearPermissionCache": "Hapus Cache Izin",
   "permissionCacheCleared": "Cache izin telah dihapus. Silakan mulai ulang aplikasi.",
   "syncingHealthData": "Menyinkronkan data kesehatan...",
+  "consumedOn": "Tanggal konsumsi: {date}",
+  "@consumedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "localSearch": "Pencarian Lokal",
+  "onlineSearch": "Pencarian Online",
+  "searchOnlineHint": "Cari makanan secara online...",
+  "quantityLabel": "Jumlah:",
+  "cameraPermissionRequired": "Izin kamera diperlukan. Silakan izinkan di pengaturan.",
+  "noCameraAvailable": "Tidak ada kamera yang tersedia.",
+  "cameraInitFailed": "Inisialisasi kamera gagal: {error}",
+  "@cameraInitFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cameraInitializing": "Menginisialisasi kamera...",
+  "cameraReady": "Kamera siap...",
+  "barcodeDetected": "Barcode terdeteksi!",
+  "pointCameraAtBarcode": "Arahkan kamera ke barcode\n(Barcode apa saja akan dikenali)",
+  "barcodeVerified": "Barcode diverifikasi!",
+  "invalidBarcode": "Barcode tidak valid",
+  "type": "Tipe",
+  "confidence": "Keyakinan",
+  "scanCount": "Jumlah pemindaian",
+  "confirm": "Konfirmasi",
+  "accept": "Terima",
+  "rescan": "Pindai ulang",
+  "requestPermission": "Minta Izin",
+  "openSettings": "Buka Pengaturan",
+  "supportedFormats": "Format yang didukung: Kode QR, barcode (EAN-13, UPC-A, dll.)",
+  "flashToggle": "Toggle Flash",
+  "barcodeScan": "Pindai Barcode",
+  "confidenceLabel": "Keyakinan",
+  "scanCountLabel": "Jumlah Pemindaian",
+  "checkingCameraPermission": "Memeriksa izin kamera...",
+  "brandLabel": "Merek",
+  "apiResultsFound": "Ditemukan {count} hasil secara keseluruhan.",
+  "@apiResultsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foodNotFoundInDatabase": "Makanan ini tidak dapat ditemukan di database {apiName}.",
+  "@foodNotFoundInDatabase": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyRequired": "Masukkan kunci API {apiName} di pengaturan untuk pencarian yang lebih akurat.",
+  "@apiKeyRequired": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "apiSearchError": "Terjadi kesalahan saat mencari {apiName}.",
+  "@apiSearchError": {
+    "placeholders": {
+      "apiName": {
+        "type": "String"
+      }
+    }
+  },
+  "noDataStatus": "Tidak ada data",
+  "dataNotFoundTitle": "Tidak ada di data",
+  "settingsRequired": "Pengaturan diperlukan",
+  "errorStatus": "Kesalahan",
   "close": "Tutup"
 }

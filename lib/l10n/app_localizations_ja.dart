@@ -1239,7 +1239,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String consumedOn(String date) {
-    return '섭취일: $date';
+    return '摂取日: $date';
   }
 
   @override
@@ -1745,54 +1745,54 @@ class AppLocalizationsJa extends AppLocalizations {
   String get useRecommendedAmount => '推奨量を適用';
 
   @override
-  String get barcodeScan => '바코드 스캔';
+  String get barcodeScan => 'バーコードスキャン';
 
   @override
-  String get cameraPermissionRequired => '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+  String get cameraPermissionRequired => 'カメラ権限が必要です。設定で権限を許可してください。';
 
   @override
-  String get cameraInitializing => '카메라 초기화 중...';
+  String get cameraInitializing => 'カメラを初期化中...';
 
   @override
   String cameraInitFailed(String error) {
-    return '카메라 초기화에 실패했습니다: $error';
+    return 'カメラの初期化に失敗しました: $error';
   }
 
   @override
-  String get barcodeDetected => '바코드 감지됨!';
+  String get barcodeDetected => 'バーコードを検知しました！';
 
   @override
-  String get pointCameraAtBarcode => '바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)';
+  String get pointCameraAtBarcode => 'バーコードにカメラを向けてください\n（どのバーコードでも認識されます）';
 
   @override
-  String get barcodeVerified => '바코드 검증 완료!';
+  String get barcodeVerified => 'バーコードが検証されました！';
 
   @override
-  String get invalidBarcode => '유효하지 않은 바코드';
+  String get invalidBarcode => '無効なバーコード';
 
   @override
-  String get type => '타입';
+  String get type => 'タイプ';
 
   @override
-  String get confidence => '신뢰도';
+  String get confidence => '信頼度';
 
   @override
-  String get scanCount => '스캔 횟수';
+  String get scanCount => 'スキャン回数';
 
   @override
-  String get accept => '사용';
+  String get accept => '使用';
 
   @override
-  String get rescan => '재스캔';
+  String get rescan => '再スキャン';
 
   @override
-  String get supportedFormats => '지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)';
+  String get supportedFormats => 'サポートされている形式: QRコード、バーコード（EAN-13、UPC-Aなど）';
 
   @override
-  String get localSearch => '로컬 검색';
+  String get localSearch => 'ローカル検索';
 
   @override
-  String get onlineSearch => '인터넷 검색';
+  String get onlineSearch => 'インターネット検索';
 
   @override
   String get barcodeSearching => '바코드 검색 중...';
@@ -1846,13 +1846,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get barcodeFormatUnknown => '알 수 없는 형식';
 
   @override
-  String get searchOnlineHint => '인터넷에서 음식 검색...';
+  String get searchOnlineHint => 'インターネットで食材を検索...';
 
   @override
   String get search100gHint => '100g당 입력은 검색 탭을 이용해주세요.';
 
   @override
-  String get quantityLabel => '수량:';
+  String get quantityLabel => '数量:';
 
   @override
   String equalsCalories(int calories) {
@@ -1871,4 +1871,63 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get searchGoogle => '구글에서 검색';
+
+  @override
+  String get noCameraAvailable => '利用可能なカメラがありません。';
+
+  @override
+  String get cameraReady => 'カメラ準備完了...';
+
+  @override
+  String get requestPermission => '権限をリクエスト';
+
+  @override
+  String get openSettings => '設定を開く';
+
+  @override
+  String get flashToggle => 'フラッシュ切り替え';
+
+  @override
+  String get confidenceLabel => '信頼度';
+
+  @override
+  String get scanCountLabel => 'スキャン回数';
+
+  @override
+  String get checkingCameraPermission => 'カメラ権限を確認中...';
+
+  @override
+  String get brandLabel => 'ブランド';
+
+  @override
+  String apiResultsFound(int count) {
+    return '合計$count件の結果が見つかりました。';
+  }
+
+  @override
+  String foodNotFoundInDatabase(String apiName) {
+    return '$apiNameデータベースでこの食品が見つかりませんでした。';
+  }
+
+  @override
+  String apiKeyRequired(String apiName) {
+    return 'より正確な検索のために設定で${apiName}APIキーを入力してください。';
+  }
+
+  @override
+  String apiSearchError(String apiName) {
+    return '$apiNameの検索中にエラーが発生しました。';
+  }
+
+  @override
+  String get noDataStatus => 'データなし';
+
+  @override
+  String get dataNotFoundTitle => 'データにない';
+
+  @override
+  String get settingsRequired => '設定が必要';
+
+  @override
+  String get errorStatus => 'エラー';
 }

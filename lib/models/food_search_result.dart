@@ -95,6 +95,8 @@ class ApiSearchResult {
     }
   }
 
+  // Note: This method is deprecated. Use localized messages in UI widgets instead.
+  // Kept for backward compatibility.
   String get statusDescription {
     switch (status) {
       case SearchStatus.success:

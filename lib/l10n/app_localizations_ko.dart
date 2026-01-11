@@ -1871,4 +1871,63 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get searchGoogle => '구글에서 검색';
+
+  @override
+  String get noCameraAvailable => '사용 가능한 카메라가 없습니다.';
+
+  @override
+  String get cameraReady => '카메라 준비 중...';
+
+  @override
+  String get requestPermission => '권한 요청';
+
+  @override
+  String get openSettings => '설정으로 이동';
+
+  @override
+  String get flashToggle => '플래시 토글';
+
+  @override
+  String get confidenceLabel => '신뢰도';
+
+  @override
+  String get scanCountLabel => '스캔 횟수';
+
+  @override
+  String get checkingCameraPermission => '카메라 권한을 확인하는 중...';
+
+  @override
+  String get brandLabel => '브랜드';
+
+  @override
+  String apiResultsFound(int count) {
+    return '총 $count개의 결과를 찾았습니다.';
+  }
+
+  @override
+  String foodNotFoundInDatabase(String apiName) {
+    return '$apiName 데이터베이스에서 이 음식을 찾을 수 없습니다.';
+  }
+
+  @override
+  String apiKeyRequired(String apiName) {
+    return '설정에서 $apiName API 키를 입력하면 더 정확한 검색이 가능합니다.';
+  }
+
+  @override
+  String apiSearchError(String apiName) {
+    return '$apiName 검색 중 오류가 발생했습니다.';
+  }
+
+  @override
+  String get noDataStatus => '데이터 없음';
+
+  @override
+  String get dataNotFoundTitle => '데이터에 없음';
+
+  @override
+  String get settingsRequired => '설정 필요';
+
+  @override
+  String get errorStatus => '오류';
 }
