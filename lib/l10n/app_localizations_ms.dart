@@ -1797,4 +1797,132 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get useRecommendedAmount => '권장량 적용';
+
+  @override
+  String get barcodeScan => '바코드 스캔';
+
+  @override
+  String get cameraPermissionRequired => '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+
+  @override
+  String get cameraInitializing => '카메라 초기화 중...';
+
+  @override
+  String cameraInitFailed(String error) {
+    return '카메라 초기화에 실패했습니다: $error';
+  }
+
+  @override
+  String get barcodeDetected => '바코드 감지됨!';
+
+  @override
+  String get pointCameraAtBarcode => '바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)';
+
+  @override
+  String get barcodeVerified => '바코드 검증 완료!';
+
+  @override
+  String get invalidBarcode => '유효하지 않은 바코드';
+
+  @override
+  String get type => '타입';
+
+  @override
+  String get confidence => '신뢰도';
+
+  @override
+  String get scanCount => '스캔 횟수';
+
+  @override
+  String get accept => '사용';
+
+  @override
+  String get rescan => '재스캔';
+
+  @override
+  String get supportedFormats => '지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)';
+
+  @override
+  String get localSearch => '로컬 검색';
+
+  @override
+  String get onlineSearch => '인터넷 검색';
+
+  @override
+  String get barcodeSearching => '바코드 검색 중...';
+
+  @override
+  String get barcodeSearchResults => '바코드 검색 결과';
+
+  @override
+  String get barcodeSearchFailed => '바코드 검색 실패';
+
+  @override
+  String get barcodeFormatEan13 => 'EAN-13 (상품 바코드)';
+
+  @override
+  String get barcodeFormatEan8 => 'EAN-8 (짧은 상품 바코드)';
+
+  @override
+  String get barcodeFormatUpca => 'UPC-A (미국 상품 바코드)';
+
+  @override
+  String get barcodeFormatUpce => 'UPC-E (짧은 미국 상품 바코드)';
+
+  @override
+  String get barcodeFormatQrCode => 'QR 코드';
+
+  @override
+  String get barcodeFormatCode128 => 'Code 128 (상업용)';
+
+  @override
+  String get barcodeFormatCode39 => 'Code 39 (산업용)';
+
+  @override
+  String get barcodeFormatCode93 => 'Code 93';
+
+  @override
+  String get barcodeFormatCodabar => 'Codabar';
+
+  @override
+  String get barcodeFormatItf => 'ITF (Interleaved 2 of 5)';
+
+  @override
+  String get barcodeFormatAztec => 'Aztec 코드';
+
+  @override
+  String get barcodeFormatDataMatrix => 'Data Matrix';
+
+  @override
+  String get barcodeFormatPdf417 => 'PDF417';
+
+  @override
+  String get barcodeFormatUnknown => '알 수 없는 형식';
+
+  @override
+  String get searchOnlineHint => '인터넷에서 음식 검색...';
+
+  @override
+  String get search100gHint => '100g당 입력은 검색 탭을 이용해주세요.';
+
+  @override
+  String get quantityLabel => '수량:';
+
+  @override
+  String equalsCalories(int calories) {
+    return '= ${calories}kcal';
+  }
+
+  @override
+  String get calorieInfoSaved => '칼로리 정보가 저장되었습니다';
+
+  @override
+  String get enterValidCaloriesDialog => '올바른 칼로리 값을 입력해주세요';
+
+  @override
+  String get calorieInfoNotFound =>
+      '이 음식의 칼로리 정보를 찾을 수 없습니다.\n구글에서 검색하거나 직접 입력해주세요.';
+
+  @override
+  String get searchGoogle => '구글에서 검색';
 }

@@ -780,7 +780,14 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
           // 100g당 모드는 여기서 지원하지 않거나 별도 처리 (여기서는 간단히 안내 문구 또는 기존 커스텀 폼 사용)
           // 기존 _addCustomFood 로직을 사용하는 폼을 보여줄 수도 있음.
           // 하지만 일관성을 위해 Total/Serving/Quick 위주로 구성.
-          Expanded(child: Center(child: Text('100g당 입력은 검색 탭을 이용해주세요.'))),
+          Expanded(
+            child: Center(
+              child: Text(
+                AppLocalizations.of(context)?.search100gHint ??
+                    '100g당 입력은 검색 탭을 이용해주세요.',
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1047,12 +1054,16 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
                   segments: [
                     ButtonSegment(
                       value: false,
-                      label: Text('로컬 검색'),
+                      label: Text(
+                        AppLocalizations.of(context)?.localSearch ?? '로컬 검색',
+                      ),
                       icon: Icon(Icons.phone_android),
                     ),
                     ButtonSegment(
                       value: true,
-                      label: Text('인터넷 검색'),
+                      label: Text(
+                        AppLocalizations.of(context)?.onlineSearch ?? '인터넷 검색',
+                      ),
                       icon: Icon(Icons.cloud),
                     ),
                   ],
@@ -1084,7 +1095,8 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: _isOnlineSearch
-                  ? '인터넷에서 음식 검색...'
+                  ? AppLocalizations.of(context)?.searchOnlineHint ??
+                        '인터넷에서 음식 검색...'
                   : AppLocalizations.of(context)!.searchFoodHint,
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _isOnlineSearch
@@ -1346,10 +1358,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
             children: [
               Icon(Icons.cloud, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text('인터넷 검색'),
+              Text(AppLocalizations.of(context)?.onlineSearch ?? '인터넷 검색'),
               const SizedBox(height: 8),
-              const Text(
-                '음식명을 입력하고 검색 버튼을 눌러주세요',
+              Text(
+                AppLocalizations.of(context)?.searchFoodHint ??
+                    '음식명을 입력하고 검색 버튼을 눌러주세요',
                 style: TextStyle(color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
@@ -1551,7 +1564,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
               child: Row(
                 children: [
                   Text(
-                    '수량:',
+                    AppLocalizations.of(context)?.quantityLabel ?? '수량:',
                     style: TextStyle(
                       color: food.sourceTextColor,
                       fontWeight: FontWeight.w500,
@@ -1597,7 +1610,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
                       backgroundColor: food.sourceColor,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('추가'),
+                    child: Text(AppLocalizations.of(context)?.addFood ?? '추가'),
                   ),
                 ],
               ),
@@ -1868,8 +1881,9 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '이 음식의 칼로리 정보를 찾을 수 없습니다.\n'
-              '구글에서 검색하거나 직접 입력해주세요.',
+              AppLocalizations.of(context)?.calorieInfoNotFound ??
+                  '이 음식의 칼로리 정보를 찾을 수 없습니다.\n'
+                      '구글에서 검색하거나 직접 입력해주세요.',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14),
             ),
@@ -1877,7 +1891,9 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
             // 구글 검색 버튼
             OutlinedButton.icon(
               icon: const Icon(Icons.search),
-              label: const Text('구글에서 검색'),
+              label: Text(
+                AppLocalizations.of(context)?.searchGoogle ?? '구글에서 검색',
+              ),
               onPressed: () async {
                 final url =
                     'https://www.google.com/search?q=${Uri.encodeComponent("${food.name} calories per 100g")}';
@@ -1907,7 +1923,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)?.cancel ?? '취소'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1938,19 +1954,31 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('칼로리 정보가 저장되었습니다')),
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)?.calorieInfoSaved ??
+                              '칼로리 정보가 저장되었습니다',
+                        ),
+                      ),
                     );
                   }
                 } else {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('올바른 칼로리 값을 입력해주세요')),
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(
+                                context,
+                              )?.enterValidCaloriesDialog ??
+                              '올바른 칼로리 값을 입력해주세요',
+                        ),
+                      ),
                     );
                   }
                 }
               }
             },
-            child: const Text('저장'),
+            child: Text(AppLocalizations.of(context)?.save ?? '저장'),
           ),
         ],
       ),

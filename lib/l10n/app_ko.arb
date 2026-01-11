@@ -788,5 +788,61 @@
   "recommendedBasedOnProfile": "체중과 활동량을 기반으로 계산된 권장량입니다",
   "yourDailyGoal": "나의 하루 목표",
   "canAdjustManually": "직접 조정할 수 있습니다 (1000~5000ml)",
-  "useRecommendedAmount": "권장량 적용"
+  "useRecommendedAmount": "권장량 적용",
+
+  "barcodeScan": "바코드 스캔",
+  "cameraPermissionRequired": "카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.",
+  "cameraInitializing": "카메라 초기화 중...",
+  "cameraInitFailed": "카메라 초기화에 실패했습니다: {error}",
+  "@cameraInitFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "barcodeDetected": "바코드 감지됨!",
+  "pointCameraAtBarcode": "바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)",
+  "barcodeVerified": "바코드 검증 완료!",
+  "invalidBarcode": "유효하지 않은 바코드",
+  "type": "타입",
+  "confidence": "신뢰도",
+  "scanCount": "스캔 횟수",
+  "confirm": "확인",
+  "accept": "사용",
+  "rescan": "재스캔",
+  "supportedFormats": "지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)",
+  "localSearch": "로컬 검색",
+  "onlineSearch": "인터넷 검색",
+  "barcodeSearching": "바코드 검색 중...",
+  "barcodeSearchResults": "바코드 검색 결과",
+  "barcodeSearchFailed": "바코드 검색 실패",
+  "barcodeFormatEan13": "EAN-13 (상품 바코드)",
+  "barcodeFormatEan8": "EAN-8 (짧은 상품 바코드)",
+  "barcodeFormatUpca": "UPC-A (미국 상품 바코드)",
+  "barcodeFormatUpce": "UPC-E (짧은 미국 상품 바코드)",
+  "barcodeFormatQrCode": "QR 코드",
+  "barcodeFormatCode128": "Code 128 (상업용)",
+  "barcodeFormatCode39": "Code 39 (산업용)",
+  "barcodeFormatCode93": "Code 93",
+  "barcodeFormatCodabar": "Codabar",
+  "barcodeFormatItf": "ITF (Interleaved 2 of 5)",
+  "barcodeFormatAztec": "Aztec 코드",
+  "barcodeFormatDataMatrix": "Data Matrix",
+  "barcodeFormatPdf417": "PDF417",
+  "barcodeFormatUnknown": "알 수 없는 형식",
+
+  "searchOnlineHint": "인터넷에서 음식 검색...",
+  "search100gHint": "100g당 입력은 검색 탭을 이용해주세요.",
+  "quantityLabel": "수량:",
+  "equalsCalories": "= {calories}kcal",
+  "@equalsCalories": {
+    "placeholders": {
+      "calories": {"type": "int"}
+    }
+  },
+  "addFood": "추가",
+  "calorieInfoSaved": "칼로리 정보가 저장되었습니다",
+  "enterValidCaloriesDialog": "올바른 칼로리 값을 입력해주세요",
+  "calorieInfoNotFound": "이 음식의 칼로리 정보를 찾을 수 없습니다.\n구글에서 검색하거나 직접 입력해주세요.",
+  "searchGoogle": "구글에서 검색",
+  "save": "저장"
 }

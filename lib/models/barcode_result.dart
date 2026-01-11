@@ -1,4 +1,5 @@
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import '../l10n/app_localizations.dart';
 
 /// 바코드 스캔 결과 모델
 class BarcodeScanResult {
@@ -198,37 +199,37 @@ class BarcodeValidator {
     return confidence.clamp(0, 100);
   }
 
-  /// 포맷 표시명 변환
+  /// 포맷 표시명 변환 (번역 키 반환)
   static String _getFormatDisplayName(BarcodeFormat format) {
     switch (format) {
       case BarcodeFormat.ean13:
-        return 'EAN-13 (상품 바코드)';
+        return 'barcodeFormatEan13';
       case BarcodeFormat.ean8:
-        return 'EAN-8 (짧은 상품 바코드)';
+        return 'barcodeFormatEan8';
       case BarcodeFormat.upca:
-        return 'UPC-A (미국 상품 바코드)';
+        return 'barcodeFormatUpca';
       case BarcodeFormat.upce:
-        return 'UPC-E (짧은 미국 상품 바코드)';
+        return 'barcodeFormatUpce';
       case BarcodeFormat.qrCode:
-        return 'QR 코드';
+        return 'barcodeFormatQrCode';
       case BarcodeFormat.code128:
-        return 'Code 128 (상업용)';
+        return 'barcodeFormatCode128';
       case BarcodeFormat.code39:
-        return 'Code 39 (산업용)';
+        return 'barcodeFormatCode39';
       case BarcodeFormat.code93:
-        return 'Code 93';
+        return 'barcodeFormatCode93';
       case BarcodeFormat.codabar:
-        return 'Codabar';
+        return 'barcodeFormatCodabar';
       case BarcodeFormat.itf:
-        return 'ITF (Interleaved 2 of 5)';
+        return 'barcodeFormatItf';
       case BarcodeFormat.aztec:
-        return 'Aztec 코드';
+        return 'barcodeFormatAztec';
       case BarcodeFormat.dataMatrix:
-        return 'Data Matrix';
+        return 'barcodeFormatDataMatrix';
       case BarcodeFormat.pdf417:
-        return 'PDF417';
+        return 'barcodeFormatPdf417';
       default:
-        return '알 수 없는 포맷';
+        return 'barcodeFormatUnknown';
     }
   }
 }

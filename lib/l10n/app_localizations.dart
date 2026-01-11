@@ -2471,7 +2471,7 @@ abstract class AppLocalizations {
   /// No description provided for @addFood.
   ///
   /// In ko, this message translates to:
-  /// **'음식 추가'**
+  /// **'추가'**
   String get addFood;
 
   /// No description provided for @quantityHint.
@@ -3421,6 +3421,252 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'권장량 적용'**
   String get useRecommendedAmount;
+
+  /// No description provided for @barcodeScan.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드 스캔'**
+  String get barcodeScan;
+
+  /// No description provided for @cameraPermissionRequired.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.'**
+  String get cameraPermissionRequired;
+
+  /// No description provided for @cameraInitializing.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 초기화 중...'**
+  String get cameraInitializing;
+
+  /// No description provided for @cameraInitFailed.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 초기화에 실패했습니다: {error}'**
+  String cameraInitFailed(String error);
+
+  /// No description provided for @barcodeDetected.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드 감지됨!'**
+  String get barcodeDetected;
+
+  /// No description provided for @pointCameraAtBarcode.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드를 카메라에 비춰주세요\n(어디에나 바코드가 있으면 인식됩니다)'**
+  String get pointCameraAtBarcode;
+
+  /// No description provided for @barcodeVerified.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드 검증 완료!'**
+  String get barcodeVerified;
+
+  /// No description provided for @invalidBarcode.
+  ///
+  /// In ko, this message translates to:
+  /// **'유효하지 않은 바코드'**
+  String get invalidBarcode;
+
+  /// No description provided for @type.
+  ///
+  /// In ko, this message translates to:
+  /// **'타입'**
+  String get type;
+
+  /// No description provided for @confidence.
+  ///
+  /// In ko, this message translates to:
+  /// **'신뢰도'**
+  String get confidence;
+
+  /// No description provided for @scanCount.
+  ///
+  /// In ko, this message translates to:
+  /// **'스캔 횟수'**
+  String get scanCount;
+
+  /// No description provided for @accept.
+  ///
+  /// In ko, this message translates to:
+  /// **'사용'**
+  String get accept;
+
+  /// No description provided for @rescan.
+  ///
+  /// In ko, this message translates to:
+  /// **'재스캔'**
+  String get rescan;
+
+  /// No description provided for @supportedFormats.
+  ///
+  /// In ko, this message translates to:
+  /// **'지원 형식: QR코드, 바코드 (EAN-13, UPC-A 등)'**
+  String get supportedFormats;
+
+  /// No description provided for @localSearch.
+  ///
+  /// In ko, this message translates to:
+  /// **'로컬 검색'**
+  String get localSearch;
+
+  /// No description provided for @onlineSearch.
+  ///
+  /// In ko, this message translates to:
+  /// **'인터넷 검색'**
+  String get onlineSearch;
+
+  /// No description provided for @barcodeSearching.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드 검색 중...'**
+  String get barcodeSearching;
+
+  /// No description provided for @barcodeSearchResults.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드 검색 결과'**
+  String get barcodeSearchResults;
+
+  /// No description provided for @barcodeSearchFailed.
+  ///
+  /// In ko, this message translates to:
+  /// **'바코드 검색 실패'**
+  String get barcodeSearchFailed;
+
+  /// No description provided for @barcodeFormatEan13.
+  ///
+  /// In ko, this message translates to:
+  /// **'EAN-13 (상품 바코드)'**
+  String get barcodeFormatEan13;
+
+  /// No description provided for @barcodeFormatEan8.
+  ///
+  /// In ko, this message translates to:
+  /// **'EAN-8 (짧은 상품 바코드)'**
+  String get barcodeFormatEan8;
+
+  /// No description provided for @barcodeFormatUpca.
+  ///
+  /// In ko, this message translates to:
+  /// **'UPC-A (미국 상품 바코드)'**
+  String get barcodeFormatUpca;
+
+  /// No description provided for @barcodeFormatUpce.
+  ///
+  /// In ko, this message translates to:
+  /// **'UPC-E (짧은 미국 상품 바코드)'**
+  String get barcodeFormatUpce;
+
+  /// No description provided for @barcodeFormatQrCode.
+  ///
+  /// In ko, this message translates to:
+  /// **'QR 코드'**
+  String get barcodeFormatQrCode;
+
+  /// No description provided for @barcodeFormatCode128.
+  ///
+  /// In ko, this message translates to:
+  /// **'Code 128 (상업용)'**
+  String get barcodeFormatCode128;
+
+  /// No description provided for @barcodeFormatCode39.
+  ///
+  /// In ko, this message translates to:
+  /// **'Code 39 (산업용)'**
+  String get barcodeFormatCode39;
+
+  /// No description provided for @barcodeFormatCode93.
+  ///
+  /// In ko, this message translates to:
+  /// **'Code 93'**
+  String get barcodeFormatCode93;
+
+  /// No description provided for @barcodeFormatCodabar.
+  ///
+  /// In ko, this message translates to:
+  /// **'Codabar'**
+  String get barcodeFormatCodabar;
+
+  /// No description provided for @barcodeFormatItf.
+  ///
+  /// In ko, this message translates to:
+  /// **'ITF (Interleaved 2 of 5)'**
+  String get barcodeFormatItf;
+
+  /// No description provided for @barcodeFormatAztec.
+  ///
+  /// In ko, this message translates to:
+  /// **'Aztec 코드'**
+  String get barcodeFormatAztec;
+
+  /// No description provided for @barcodeFormatDataMatrix.
+  ///
+  /// In ko, this message translates to:
+  /// **'Data Matrix'**
+  String get barcodeFormatDataMatrix;
+
+  /// No description provided for @barcodeFormatPdf417.
+  ///
+  /// In ko, this message translates to:
+  /// **'PDF417'**
+  String get barcodeFormatPdf417;
+
+  /// No description provided for @barcodeFormatUnknown.
+  ///
+  /// In ko, this message translates to:
+  /// **'알 수 없는 형식'**
+  String get barcodeFormatUnknown;
+
+  /// No description provided for @searchOnlineHint.
+  ///
+  /// In ko, this message translates to:
+  /// **'인터넷에서 음식 검색...'**
+  String get searchOnlineHint;
+
+  /// No description provided for @search100gHint.
+  ///
+  /// In ko, this message translates to:
+  /// **'100g당 입력은 검색 탭을 이용해주세요.'**
+  String get search100gHint;
+
+  /// No description provided for @quantityLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'수량:'**
+  String get quantityLabel;
+
+  /// No description provided for @equalsCalories.
+  ///
+  /// In ko, this message translates to:
+  /// **'= {calories}kcal'**
+  String equalsCalories(int calories);
+
+  /// No description provided for @calorieInfoSaved.
+  ///
+  /// In ko, this message translates to:
+  /// **'칼로리 정보가 저장되었습니다'**
+  String get calorieInfoSaved;
+
+  /// No description provided for @enterValidCaloriesDialog.
+  ///
+  /// In ko, this message translates to:
+  /// **'올바른 칼로리 값을 입력해주세요'**
+  String get enterValidCaloriesDialog;
+
+  /// No description provided for @calorieInfoNotFound.
+  ///
+  /// In ko, this message translates to:
+  /// **'이 음식의 칼로리 정보를 찾을 수 없습니다.\n구글에서 검색하거나 직접 입력해주세요.'**
+  String get calorieInfoNotFound;
+
+  /// No description provided for @searchGoogle.
+  ///
+  /// In ko, this message translates to:
+  /// **'구글에서 검색'**
+  String get searchGoogle;
 }
 
 class _AppLocalizationsDelegate

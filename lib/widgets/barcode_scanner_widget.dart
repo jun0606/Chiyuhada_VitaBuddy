@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/barcode_result.dart';
+import '../l10n/app_localizations.dart';
 
 /// 바코드 스캔을 위한 위젯
 /// Camera 패키지 + Google ML Kit Barcode Scanning을 사용
@@ -315,6 +316,45 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
     _restartCameraStream();
   }
 
+  /// 바코드 포맷 번역 키를 실제 번역된 텍스트로 변환
+  String _getTranslatedFormatName(BuildContext context, String formatKey) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return formatKey; // 폴백
+
+    switch (formatKey) {
+      case 'barcodeFormatEan13':
+        return l10n.barcodeFormatEan13;
+      case 'barcodeFormatEan8':
+        return l10n.barcodeFormatEan8;
+      case 'barcodeFormatUpca':
+        return l10n.barcodeFormatUpca;
+      case 'barcodeFormatUpce':
+        return l10n.barcodeFormatUpce;
+      case 'barcodeFormatQrCode':
+        return l10n.barcodeFormatQrCode;
+      case 'barcodeFormatCode128':
+        return l10n.barcodeFormatCode128;
+      case 'barcodeFormatCode39':
+        return l10n.barcodeFormatCode39;
+      case 'barcodeFormatCode93':
+        return l10n.barcodeFormatCode93;
+      case 'barcodeFormatCodabar':
+        return l10n.barcodeFormatCodabar;
+      case 'barcodeFormatItf':
+        return l10n.barcodeFormatItf;
+      case 'barcodeFormatAztec':
+        return l10n.barcodeFormatAztec;
+      case 'barcodeFormatDataMatrix':
+        return l10n.barcodeFormatDataMatrix;
+      case 'barcodeFormatPdf417':
+        return l10n.barcodeFormatPdf417;
+      case 'barcodeFormatUnknown':
+        return l10n.barcodeFormatUnknown;
+      default:
+        return formatKey; // 폴백
+    }
+  }
+
   /// 상태별 텍스트 반환 (간소화)
   String get _statusText {
     if (!_isInitialized) return '카메라 준비 중...';
@@ -327,7 +367,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
     return Scaffold(
       backgroundColor: Colors.black, // 스캐너 배경 블랙
       appBar: AppBar(
-        title: const Text('바코드 스캔'),
+        title: Text(AppLocalizations.of(context)?.barcodeScan ?? '바코드 스캔'),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -425,7 +465,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '타입: ${result.formatDisplayName}',
+                                '${AppLocalizations.of(context)?.type ?? '타입'}: ${_getTranslatedFormatName(context, result.formatDisplayName)}',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
