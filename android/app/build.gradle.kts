@@ -27,8 +27,8 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
-        versionCode = 2  // 첫 출시 버전
-        versionName = "1.0.1"  // 첫 출시 버전 이름
+        versionCode = 3  // 두 번째 출시 버전
+        versionName = "1.0.1"  // 두 번째 출시 버전 이름
     }
 
     signingConfigs {
