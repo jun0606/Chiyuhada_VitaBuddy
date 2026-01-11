@@ -52,5 +52,9 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>앱에서 기록한 운동 데이터를 HealthKit에 저장합니다.</string>
 
+	<!-- 카메라 권한 (바코드 스캔용) -->
+	<key>NSCameraUsageDescription</key>
+	<string>바코드와 QR코드를 스캔하여 음식 정보를 검색합니다.</string>
+
 </dict>
 </plist>

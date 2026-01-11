@@ -69,6 +69,11 @@ dependencies:
 
   # 인터넷 및 URL
   url_launcher: ^6.3.0
+  http: ^1.2.0
+
+  # 바코드 스캔
+  google_mlkit_barcode_scanning: ^0.14.1
+  camera: ^0.10.5+9
 
   # 국제화 및 저장 (flutter_localizations는 상단에 선언됨)
   shared_preferences: ^2.3.2

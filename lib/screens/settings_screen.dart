@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/health_data_service.dart';
+import '../services/food_search_service.dart';
 import '../l10n/app_localizations.dart';
 import 'clothing_settings_screen.dart';
 import 'profile_edit_screen.dart';
@@ -258,6 +259,13 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _buildSettingsItem(
               context,
+              'USDA API 키 설정',
+              Icons.api_rounded,
+              () => _showUsdaApiKeyDialog(context),
+            ),
+            const SizedBox(height: 12),
+            _buildSettingsItem(
+              context,
               AppLocalizations.of(context)!.timezoneSettings,
               Icons.schedule,
               () => _showTimezoneDialog(context),
@@ -266,6 +274,73 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showUsdaApiKeyDialog(BuildContext context) async {
+    final foodSearchService = FoodSearchService();
+    final currentApiKey = await foodSearchService.getUsdaApiKey();
+
+    final controller = TextEditingController(text: currentApiKey ?? '');
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('USDA FoodData Central API 키'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'USDA FoodData Central API를 사용하기 위한 API 키를 입력하세요.\n'
+                'API 키는 https://fdc.nal.usda.gov/api-key-signup/ 에서 무료로 발급받을 수 있습니다.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'API 키',
+                  hintText: 'API 키를 입력하세요',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true, // API 키 보안
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final apiKey = controller.text.trim();
+                if (apiKey.isNotEmpty) {
+                  await foodSearchService.setUsdaApiKey(apiKey);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('API 키가 저장되었습니다')),
+                    );
+                  }
+                } else {
+                  // 빈 값이면 기존 키 삭제
+                  await foodSearchService.setUsdaApiKey('');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('API 키가 삭제되었습니다')),
+                    );
+                  }
+                }
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('저장'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _showTimezoneDialog(BuildContext context) {

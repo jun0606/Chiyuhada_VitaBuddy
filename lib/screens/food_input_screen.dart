@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_provider.dart';
 import '../services/database_service.dart';
+import '../services/food_search_service.dart';
 import '../models/food_input_mode.dart';
+import '../models/food_search_result.dart';
+import '../widgets/barcode_scanner_widget.dart';
 import '../l10n/app_localizations.dart';
+import 'settings_screen.dart';
 
 class FoodInputScreen extends StatefulWidget {
   const FoodInputScreen({super.key});
@@ -13,6 +18,7 @@ class FoodInputScreen extends StatefulWidget {
 }
 
 class _FoodInputScreenState extends State<FoodInputScreen> {
+  late BuildContext _screenContext; // 음식 입력 화면의 context 저장
   final _searchController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
   final _customFoodController = TextEditingController();
@@ -47,6 +53,16 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   // 직접 추가 시 선택된 카테고리
   String _selectedCustomCategory = '기타';
+
+  // 인터넷 검색 관련
+  bool _isOnlineSearch = false; // 로컬 vs 인터넷 검색 토글
+  List<FoodSearchResult> _onlineSearchResults = [];
+  bool _isOnlineSearching = false;
+  String? _onlineSearchQuery;
+  FoodSearchResult? _selectedOnlineFood;
+
+  // 각 API별 검색 결과
+  Map<String, ApiSearchResult>? _apiSearchResults;
 
   final List<String> _categories = [
     '전체',
@@ -537,6 +553,7 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _screenContext = context; // ✅ 음식 입력 화면의 context 저장
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -725,8 +742,11 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       children: [
         _buildSearchAndFilter(),
         if (_selectedFood != null) _buildSelectedFood(),
+        if (_selectedOnlineFood != null) _buildSelectedOnlineFood(),
         Expanded(
-          child: _isLoading
+          child: _isOnlineSearch
+              ? _buildOnlineSearchResults()
+              : _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _filteredFoods.isEmpty
               ? Center(
@@ -1019,40 +1039,91 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
       color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
+          // 검색 모드 토글 (로컬/인터넷)
+          Row(
+            children: [
+              Expanded(
+                child: SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment(
+                      value: false,
+                      label: Text('로컬 검색'),
+                      icon: Icon(Icons.phone_android),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      label: Text('인터넷 검색'),
+                      icon: Icon(Icons.cloud),
+                    ),
+                  ],
+                  selected: {_isOnlineSearch},
+                  onSelectionChanged: (Set<bool> newSelection) {
+                    setState(() {
+                      _isOnlineSearch = newSelection.first;
+                      // 검색 결과 초기화
+                      _onlineSearchResults.clear();
+                      _onlineSearchQuery = null;
+                      _selectedOnlineFood = null;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 바코드 스캔 버튼
+              IconButton(
+                icon: const Icon(Icons.qr_code_scanner),
+                onPressed: _scanBarcode,
+                tooltip: '바코드 스캔',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
           // 검색 필드
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.searchFoodHint,
+              hintText: _isOnlineSearch
+                  ? '인터넷에서 음식 검색...'
+                  : AppLocalizations.of(context)!.searchFoodHint,
               prefixIcon: const Icon(Icons.search),
+              suffixIcon: _isOnlineSearch
+                  ? IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: _performOnlineSearch,
+                    )
+                  : null,
               border: const OutlineInputBorder(),
             ),
+            onSubmitted: _isOnlineSearch ? (_) => _performOnlineSearch() : null,
           ),
-          const SizedBox(height: 12),
 
-          // 카테고리 필터
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = category == _selectedCategory;
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(_getLocalizedCategory(context, category)),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() => _selectedCategory = category);
-                      _filterFoods();
-                    },
-                  ),
-                );
-              },
+          if (!_isOnlineSearch) ...[
+            const SizedBox(height: 12),
+            // 카테고리 필터 (로컬 검색만)
+            SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final isSelected = category == _selectedCategory;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(_getLocalizedCategory(context, category)),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() => _selectedCategory = category);
+                        _filterFoods();
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1246,6 +1317,640 @@ class _FoodInputScreenState extends State<FoodInputScreen> {
               _addCustomFood();
             },
             child: Text(AppLocalizations.of(context)!.add),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 인터넷 검색 결과 표시 (각 API별 상태 표시)
+  Widget _buildOnlineSearchResults() {
+    if (_isOnlineSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 바코드 검색 결과가 있으면 직접 표시
+    if (_onlineSearchResults.isNotEmpty && _apiSearchResults == null) {
+      return SafeArea(
+        child: ListView(
+          children: _onlineSearchResults.map(_buildOnlineFoodItem).toList(),
+        ),
+      );
+    }
+
+    if (_apiSearchResults == null) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('인터넷 검색'),
+              const SizedBox(height: 8),
+              const Text(
+                '음식명을 입력하고 검색 버튼을 눌러주세요',
+                style: TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 유효한 결과가 있는 API를 상단으로 정렬
+    final sortedKeys = _apiSearchResults!.keys.toList()
+      ..sort((a, b) {
+        final aSuccess = _apiSearchResults![a]!.status == SearchStatus.success;
+        final bSuccess = _apiSearchResults![b]!.status == SearchStatus.success;
+        if (aSuccess && !bSuccess) return -1;
+        if (!aSuccess && bSuccess) return 1;
+        return 0; // 기존 순서 유지
+      });
+
+    return SafeArea(
+      child: ListView(
+        children: sortedKeys.map((key) {
+          return _buildApiSection(_apiSearchResults![key]!);
+        }).toList(),
+      ),
+    );
+  }
+
+  /// 각 API 섹션 표시
+  Widget _buildApiSection(ApiSearchResult apiResult) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 섹션 헤더
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: apiResult.headerColor,
+          child: Row(
+            children: [
+              Icon(apiResult.apiIcon, color: apiResult.textColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${apiResult.displayName} (${apiResult.statusText})',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: apiResult.textColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 검색 결과 또는 상태 메시지
+        if (apiResult.status == SearchStatus.success) ...[
+          ...apiResult.results.map(_buildOnlineFoodItem),
+        ] else ...[
+          _buildApiStatusItem(apiResult),
+        ],
+      ],
+    );
+  }
+
+  /// API 상태 아이템 표시
+  Widget _buildApiStatusItem(ApiSearchResult apiResult) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: apiResult.headerColor,
+      child: ListTile(
+        leading: Icon(apiResult.statusIcon, color: apiResult.textColor),
+        title: Text(
+          apiResult.statusTitle,
+          style: TextStyle(
+            color: apiResult.textColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(
+          apiResult.statusDescription,
+          style: TextStyle(color: apiResult.textColor.withOpacity(0.8)),
+        ),
+        onTap: apiResult.status == SearchStatus.notConfigured
+            ? () => _navigateToSettings()
+            : null,
+      ),
+    );
+  }
+
+  /// 설정 화면으로 이동 (API 키 설정 유도)
+  void _navigateToSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    ).then((_) {
+      // 설정에서 돌아왔을 때 검색 재시도 가능하도록 상태 업데이트 필요 시 처리
+    });
+  }
+
+  /// 인터넷 검색 음식 아이템
+  Widget _buildOnlineFoodItem(FoodSearchResult food) {
+    final isSelected = _selectedOnlineFood?.name == food.name;
+    final quantity = double.tryParse(_quantityController.text) ?? 1.0;
+    final totalCalories = food.caloriesPer100g != null
+        ? (food.caloriesPer100g! * quantity).round()
+        : 0;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: isSelected
+          ? Theme.of(context).colorScheme.primaryContainer
+          : food.sourceBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: food.sourceColor.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: food.sourceBadgeColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                food.sourceIcon,
+                color: food.sourceTextColor,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              food.name,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: food.sourceTextColor,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (food.caloriesPer100g != null)
+                  Text(
+                    '${food.caloriesPer100g}kcal / 100g',
+                    style: TextStyle(
+                      color: food.sourceTextColor.withOpacity(0.8),
+                    ),
+                  ),
+                if (food.brand != null)
+                  Text(
+                    '브랜드: ${food.brand}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: food.sourceTextColor.withOpacity(0.7),
+                    ),
+                  ),
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: food.sourceBadgeColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    food.sourceDisplayText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: food.sourceTextColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            trailing: isSelected
+                ? Icon(
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
+                : Icon(Icons.add_circle_outline, color: food.sourceColor),
+            onTap: food.caloriesPer100g == null || food.caloriesPer100g == 0
+                ? () => _showCalorieInputDialog(context, food)
+                : () => _selectOnlineFood(food),
+            selected: isSelected,
+          ),
+          if (isSelected && food.caloriesPer100g != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: food.sourceBackgroundColor.withOpacity(0.5),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '수량:',
+                    style: TextStyle(
+                      color: food.sourceTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 80,
+                    child: TextField(
+                      controller: _quantityController,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: food.sourceColor),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: food.sourceColor,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '= ${totalCalories}kcal',
+                    style: TextStyle(
+                      color: food.sourceTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () => _addOnlineFoodToIntake(food),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: food.sourceColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('추가'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 선택된 온라인 음식 표시
+  Widget _buildSelectedOnlineFood() {
+    if (_selectedOnlineFood == null) return const SizedBox.shrink();
+
+    final quantity = double.tryParse(_quantityController.text) ?? 1.0;
+    final totalCalories = _selectedOnlineFood!.caloriesPer100g != null
+        ? (_selectedOnlineFood!.caloriesPer100g! * quantity).round()
+        : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _selectedOnlineFood!.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (_selectedOnlineFood!.caloriesPer100g != null)
+                  Text(
+                    '${_selectedOnlineFood!.caloriesPer100g}kcal / 100g',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                Text(
+                  _selectedOnlineFood!.sourceDisplayText,
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 80,
+            child: TextField(
+              controller: _quantityController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+              ),
+              onChanged: (value) => setState(() {}),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${totalCalories}kcal',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 온라인 음식 선택
+  void _selectOnlineFood(FoodSearchResult food) {
+    setState(() {
+      _selectedOnlineFood = food;
+      _quantityController.text = '1';
+    });
+  }
+
+  /// 온라인 음식을 섭취에 추가
+  Future<void> _addOnlineFoodToIntake(FoodSearchResult food) async {
+    if (food.caloriesPer100g == null) return;
+
+    final quantity = double.tryParse(_quantityController.text);
+    if (quantity == null || quantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.invalidQuantity)),
+      );
+      return;
+    }
+
+    final totalCalories = (food.caloriesPer100g! * quantity).round();
+
+    try {
+      // 로컬 DB에 저장 (재사용을 위해)
+      final foodId = await DatabaseService().addFood(
+        food.name,
+        food.caloriesPer100g!,
+      );
+
+      // 섭취 기록
+      await Provider.of<AppProvider>(
+        context,
+        listen: false,
+      ).addFoodIntake(foodId, quantity, totalCalories.toDouble());
+
+      // 즉시 아바타 반응 트리거
+      if (context.mounted) {
+        Provider.of<AppProvider>(
+          context,
+          listen: false,
+        ).triggerFoodAddedCeremony();
+      }
+
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${food.name} ${totalCalories}kcal ${l10n.foodAdded}'),
+        ),
+      );
+
+      // 선택 초기화
+      setState(() {
+        _selectedOnlineFood = null;
+        _quantityController.text = '1';
+      });
+
+      // 화면 닫기
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      print('온라인 음식 추가 실패: $e');
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${l10n.foodAddFailed}: $e')));
+    }
+  }
+
+  /// 바코드 스캔
+  Future<void> _scanBarcode() async {
+    await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BarcodeScannerWidget(
+          onBarcodeDetected: (barcode) async {
+            // ✅ 검색 시작 (검색 완료 후 검색 결과를 표시하고 사용자가 선택할 때까지 기다림)
+            await _searchFoodByBarcode(barcode);
+            // 검색 완료 후 바로 화면을 닫지 않고, 사용자가 음식을 선택할 때까지 기다림
+          },
+          onClose: () {
+            // ✅ 콜백에서 저장된 context 사용
+            if (mounted) {
+              Navigator.of(_screenContext).pop();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 바코드로 음식 검색 (각 API별 결과 표시)
+  Future<void> _searchFoodByBarcode(String barcode) async {
+    // 검색 중복 방지
+    if (_isOnlineSearching) return;
+
+    try {
+      if (mounted) {
+        setState(() {
+          _isOnlineSearching = true;
+          _selectedSourceTab = 2; // ✅ 검색 탭으로 즉시 전환
+          _isOnlineSearch = true; // ✅ 인터넷 검색 모드 즉시 활성화
+          _onlineSearchQuery = '바코드($barcode) 검색 중...';
+          _apiSearchResults = null;
+          _onlineSearchResults = [];
+        });
+      }
+
+      final foodService = FoodSearchService();
+      // 각 API별 결과를 개별적으로 얻어서 표시
+      final apiResults = await foodService.searchFoodsByApi(
+        barcode,
+        limit: 5,
+        barcode: barcode, // 바코드 검색 모드 활성화
+      );
+
+      // mounted 체크 후 UI 업데이트
+      if (mounted) {
+        // 각 API별 결과를 저장 (인터넷 검색과 동일한 방식)
+        setState(() {
+          _isOnlineSearching = false;
+          _apiSearchResults = apiResults;
+          _onlineSearchResults = []; // 호환성을 위해 빈 리스트로 설정
+          _onlineSearchQuery = '바코드 검색 결과: $barcode'; // 검색 쿼리 표시
+        });
+      }
+    } catch (e) {
+      // mounted 체크 후 에러 처리
+      if (mounted) {
+        setState(() => _isOnlineSearching = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('바코드 검색 실패: $e')));
+      }
+    }
+  }
+
+  /// 온라인 검색 수행
+  Future<void> _performOnlineSearch() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    setState(() {
+      _isOnlineSearching = true;
+      _onlineSearchQuery = query;
+      _onlineSearchResults.clear();
+      _apiSearchResults = null;
+      _selectedOnlineFood = null;
+    });
+
+    try {
+      final foodService = FoodSearchService();
+      final apiResults = await foodService.searchFoodsByApi(query, limit: 10);
+
+      // 각 API 결과를 합쳐서 기존 포맷으로 변환 (하위 호환성 유지)
+      final allResults = <FoodSearchResult>[];
+      apiResults.forEach((apiName, apiResult) {
+        if (apiResult.status == SearchStatus.success) {
+          allResults.addAll(apiResult.results);
+        }
+      });
+
+      setState(() {
+        _apiSearchResults = apiResults;
+        _onlineSearchResults = allResults;
+        _isOnlineSearching = false;
+      });
+    } catch (e) {
+      print('온라인 검색 실패: $e');
+      setState(() => _isOnlineSearching = false);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('검색 실패: $e')));
+      }
+    }
+  }
+
+  /// 칼로리 없는 음식에 대한 입력 다이얼로그
+  Future<void> _showCalorieInputDialog(
+    BuildContext context,
+    FoodSearchResult food,
+  ) async {
+    final controller = TextEditingController();
+    final quantityController = TextEditingController(text: '100'); // 기본 100g
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${food.name} 칼로리 정보'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '이 음식의 칼로리 정보를 찾을 수 없습니다.\n'
+              '구글에서 검색하거나 직접 입력해주세요.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            // 구글 검색 버튼
+            OutlinedButton.icon(
+              icon: const Icon(Icons.search),
+              label: const Text('구글에서 검색'),
+              onPressed: () async {
+                final url =
+                    'https://www.google.com/search?q=${Uri.encodeComponent("${food.name} calories per 100g")}';
+                if (await canLaunchUrl(Uri.parse(url))) {
+                  await launchUrl(
+                    Uri.parse(url),
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            // 직접 입력
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '칼로리 (kcal)',
+                hintText: '100g당 칼로리 입력',
+                border: OutlineInputBorder(),
+                suffixText: 'kcal / 100g',
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final caloriesText = controller.text.trim();
+              if (caloriesText.isNotEmpty) {
+                final calories = double.tryParse(caloriesText);
+                if (calories != null && calories > 0) {
+                  // 사용자 입력 칼로리로 음식 업데이트
+                  final updatedFood = FoodSearchResult(
+                    name: food.name,
+                    caloriesPer100g: calories,
+                    brand: food.brand,
+                    dataSource: 'user_input', // 사용자 입력 표시
+                    imageUrl: food.imageUrl,
+                    rawData: food.rawData,
+                  );
+
+                  // 로컬 DB에 저장
+                  await DatabaseService().addFood(food.name, calories);
+
+                  Navigator.pop(context);
+
+                  // 선택된 음식으로 설정
+                  setState(() {
+                    _selectedOnlineFood = updatedFood;
+                    _quantityController.text = '1';
+                  });
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('칼로리 정보가 저장되었습니다')),
+                    );
+                  }
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('올바른 칼로리 값을 입력해주세요')),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('저장'),
           ),
         ],
       ),

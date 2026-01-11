@@ -11,6 +11,8 @@
     
     <!-- Health Connect 권한 (Android 14+ 전용) -->
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+    <uses-permission android:name="android.permission.health.READ_BASAL_METABOLIC_RATE"/>
+    <uses-permission android:name="android.permission.health.WRITE_BASAL_METABOLIC_RATE"/>
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
     <uses-permission android:name="android.permission.health.READ_DISTANCE"/>
     <uses-permission android:name="android.permission.health.READ_EXERCISE"/>
@@ -21,6 +23,9 @@
     <!-- Health 플러그인이 찾는 일반 권한들 -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <uses-permission android:name="android.permission.BODY_SENSORS"/>
+
+    <!-- 카메라 권한 (바코드 스캔용) -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     
     <application
         android:label="Chiyuhada Vita Buddy"
