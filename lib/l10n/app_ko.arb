@@ -886,6 +886,10 @@
   "confidenceLabel": "신뢰도",
   "scanCountLabel": "스캔 횟수",
   "checkingCameraPermission": "카메라 권한을 확인하는 중...",
+  "cameraPermissionRequestFailed": "카메라 권한 요청에 실패했습니다.",
+  "cameraPermissionPermanentlyDenied": "카메라 권한이 영구적으로 거부되었습니다. 설정 앱에서 권한을 허용해주세요.",
+  "cameraPermissionDenied": "카메라 권한이 거부되었습니다.",
+  "cameraPermissionUnknown": "카메라 권한 상태를 확인할 수 없습니다.",
   "brandLabel": "브랜드",
   "apiResultsFound": "총 {count}개의 결과를 찾았습니다.",
   "@apiResultsFound": {

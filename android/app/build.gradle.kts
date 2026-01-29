@@ -27,16 +27,16 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
-        versionCode = 3  // 두 번째 출시 버전
-        versionName = "1.0.1"  // 두 번째 출시 버전 이름
+        versionCode = 6  // 세 번째 출시 버전
+        versionName = "1.0.6"  // 세 번째 출시 버전 이름
     }
 
     signingConfigs {
         create("release") {
             storeFile = file("upload-keystore.jks")
-            storePassword = "android"
+            storePassword = "chiyuhada@06"
             keyAlias = "upload"
-            keyPassword = "android"
+            keyPassword = "chiyuhada@06"
         }
     }
 

@@ -90,7 +90,11 @@
     "calorieInfoSaved",
     "enterValidCaloriesDialog",
     "calorieInfoNotFound",
-    "searchGoogle"
+    "searchGoogle",
+    "cameraPermissionRequestFailed",
+    "cameraPermissionPermanentlyDenied",
+    "cameraPermissionDenied",
+    "cameraPermissionUnknown"
   ],
 
   "ja": [
@@ -131,7 +135,11 @@
     "calorieInfoSaved",
     "enterValidCaloriesDialog",
     "calorieInfoNotFound",
-    "searchGoogle"
+    "searchGoogle",
+    "cameraPermissionRequestFailed",
+    "cameraPermissionPermanentlyDenied",
+    "cameraPermissionDenied",
+    "cameraPermissionUnknown"
   ],
 
   "ms": [
@@ -209,6 +217,10 @@
     "calorieInfoSaved",
     "enterValidCaloriesDialog",
     "calorieInfoNotFound",
-    "searchGoogle"
+    "searchGoogle",
+    "cameraPermissionRequestFailed",
+    "cameraPermissionPermanentlyDenied",
+    "cameraPermissionDenied",
+    "cameraPermissionUnknown"
   ]
 }

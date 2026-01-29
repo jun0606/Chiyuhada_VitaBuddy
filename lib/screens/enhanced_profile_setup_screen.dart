@@ -460,7 +460,7 @@ class _EnhancedProfileSetupScreenState
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
-              labelText: '이름 *', // 하드코딩으로 필수 표시
+              labelText: l10n.nameOptional, // 지역화된 문자열 사용
               hintText: l10n.nameHint,
             ),
             onChanged: (value) {
@@ -1256,44 +1256,48 @@ class _EnhancedProfileSetupScreenState
                         debugPrint('=== BUTTON CLICK TEST 3 DEBUG ===');
 
                         developer.log('🔧 HealthDataService 생성 시도');
-                        print('🔧 PRINT: HealthDataService 생성 시작');
                         final healthService = HealthDataService();
                         developer.log('✅ HealthDataService 생성 완료');
-                        print('✅ PRINT: HealthDataService 생성 완료');
-
-                        // Health Connect 클라이언트 초기화
-                        developer.log('🚀 Health Connect 초기화 시도');
-                        print('🚀 PRINT: Health Connect 초기화 시도');
-                        try {
-                          await healthService.initialize();
-                        } catch (e) {
-                          throw Exception(
-                            l10n.healthConnectInitFailed(e.toString()),
-                          );
-                        }
-
-                        // HealthDataService를 통해 상태 확인
-                        final status = await healthService
-                            .checkHealthConnectStatus();
-
-                        if (status == 2) {
-                          // 업데이트/마이그레이션 필요
-                          await healthService.openHealthConnectStore();
-                          throw Exception(l10n.healthConnectUpdateRequired);
-                        } else if (status == 0) {
-                          // 미설치
-                          await healthService.openHealthConnectStore();
-                          throw Exception(l10n.healthConnectNotInstalled);
-                        }
 
                         bool permissionGranted;
-                        try {
-                          permissionGranted = await healthService
-                              .requestPermissions();
-                        } catch (e) {
-                          throw Exception(
-                            l10n.healthConnectRequestFailed(e.toString()),
-                          );
+
+                        // 플랫폼별 권한 요청 처리
+                        if (Platform.isAndroid) {
+                          // Android: Health Connect 권한 요청
+                          developer.log('🤖 Android Health Connect 권한 요청 시작');
+
+                          try {
+                            await healthService.initialize();
+                            developer.log('✅ Health Connect 초기화 완료');
+                          } catch (e) {
+                            throw Exception(
+                              l10n.healthConnectInitFailed(e.toString()),
+                            );
+                          }
+
+                          // Health Connect 상태 확인
+                          final status = await healthService.checkHealthConnectStatus();
+                          if (status == 2) {
+                            await healthService.openHealthConnectStore();
+                            throw Exception(l10n.healthConnectUpdateRequired);
+                          } else if (status == 0) {
+                            await healthService.openHealthConnectStore();
+                            throw Exception(l10n.healthConnectNotInstalled);
+                          }
+
+                          permissionGranted = await healthService.requestPermissions();
+                          developer.log('📱 Android 권한 요청 결과: $permissionGranted');
+
+                        } else if (Platform.isIOS) {
+                          // iOS: HealthKit 권한 요청
+                          developer.log('🍎 iOS HealthKit 권한 요청 시작');
+
+                          permissionGranted = await healthService.requestPermissions();
+                          developer.log('📱 iOS 권한 요청 결과: $permissionGranted');
+
+                        } else {
+                          developer.log('⚠️ 지원하지 않는 플랫폼');
+                          permissionGranted = false;
                         }
 
                         if (permissionGranted && mounted) {

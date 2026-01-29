@@ -1948,6 +1948,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkingCameraPermission => 'Checking camera permission...';
 
   @override
+  String get cameraPermissionRequestFailed =>
+      'Camera permission request failed.';
+
+  @override
+  String get cameraPermissionPermanentlyDenied =>
+      'Camera permission has been permanently denied. Please allow it in the settings app.';
+
+  @override
+  String get cameraPermissionDenied => 'Camera permission denied.';
+
+  @override
+  String get cameraPermissionUnknown => 'Camera permission status unknown.';
+
+  @override
   String get brandLabel => 'Brand';
 
   @override

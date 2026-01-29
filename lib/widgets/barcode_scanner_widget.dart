@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart'; // kDebugMode 추가
 import 'package:flutter/services.dart'; // HapticFeedback 추가
 
+import 'dart:io'; // Platform 확인을 위해 추가
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
@@ -68,19 +70,56 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
 
   Future<void> _initializeCamera() async {
     try {
-      // 카메라 권한 확인
-      final status = await Permission.camera.request();
-      if (!status.isGranted) {
+      // 카메라 권한 확인 및 요청
+      PermissionStatus status;
+      try {
+        status = await Permission.camera.request();
+        print('📷 카메라 권한 요청 결과: $status');
+      } catch (e) {
+        print('❌ 카메라 권한 요청 실패: $e');
         setState(() {
           _hasPermission = false;
-          _errorMessage =
-              AppLocalizations.of(context)?.cameraPermissionRequired ??
-              '카메라 권한이 필요합니다. 설정에서 권한을 허용해주세요.';
+          _errorMessage = AppLocalizations.of(context)?.cameraPermissionRequestFailed ??
+              '카메라 권한 요청에 실패했습니다.';
         });
         return;
       }
 
-      setState(() => _hasPermission = true);
+      // 권한 상태별 처리
+      if (status.isGranted) {
+        print('✅ 카메라 권한 승인됨');
+        setState(() => _hasPermission = true);
+      } else if (status.isPermanentlyDenied) {
+        print('🚫 카메라 권한 영구 거부됨');
+        setState(() {
+          _hasPermission = false;
+          _errorMessage = AppLocalizations.of(context)?.cameraPermissionPermanentlyDenied ??
+              '카메라 권한이 영구적으로 거부되었습니다. 설정 앱에서 권한을 허용해주세요.';
+        });
+        // 영구 거부 시 설정 화면으로 바로 이동 유도
+        _showPermissionSettingsDialog();
+        return;
+      } else if (status.isDenied) {
+        print('❌ 카메라 권한 거부됨');
+        setState(() {
+          _hasPermission = false;
+          _errorMessage = AppLocalizations.of(context)?.cameraPermissionDenied ??
+              '카메라 권한이 거부되었습니다.';
+        });
+        return;
+      } else if (status.isLimited) {
+        print('⚠️ 카메라 권한 제한됨 (iOS 14+)');
+        // 제한된 권한도 일단 허용으로 처리 (일부 기능 제한될 수 있음)
+        setState(() => _hasPermission = true);
+      } else {
+        print('❓ 카메라 권한 알 수 없는 상태: $status');
+        setState(() {
+          _hasPermission = false;
+          _errorMessage = AppLocalizations.of(context)?.cameraPermissionUnknown ??
+              '카메라 권한 상태를 확인할 수 없습니다.';
+        });
+        return;
+      }
 
       // 사용 가능한 카메라 가져오기
       final cameras = await availableCameras();
@@ -104,7 +143,9 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
         backCamera,
         ResolutionPreset.high, // High 해상도로 작은 바코드 인식률 향상
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.nv21, // ML Kit 최적화 포맷
+        imageFormatGroup: Platform.isAndroid 
+            ? ImageFormatGroup.nv21 // Android 최적화
+            : ImageFormatGroup.bgra8888, // iOS 최적화
       );
 
       await _cameraController!.initialize();
@@ -232,7 +273,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
       final metadata = InputImageMetadata(
         size: imageSize,
         rotation: _rotationIntToImageRotation(camera.sensorOrientation),
-        format: InputImageFormat.nv21,
+        format: Platform.isIOS ? InputImageFormat.bgra8888 : InputImageFormat.nv21,
         bytesPerRow: plane.bytesPerRow,
       );
 
@@ -320,6 +361,33 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget>
 
     // 카메라 스트림 재시작 보장
     _restartCameraStream();
+  }
+
+  /// 권한 설정 다이얼로그 표시
+  void _showPermissionSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)?.cameraPermissionRequired ?? '카메라 권한 필요'),
+        content: Text(
+          AppLocalizations.of(context)?.cameraPermissionPermanentlyDenied ??
+          '카메라 권한이 영구적으로 거부되었습니다.\n설정 앱에서 이 앱의 카메라 권한을 허용해주세요.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context)?.cancel ?? '취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              openAppSettings();
+            },
+            child: Text(AppLocalizations.of(context)?.openSettings ?? '설정으로 이동'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 바코드 포맷 번역 키를 실제 번역된 텍스트로 변환

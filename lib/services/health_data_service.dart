@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:io';
 import 'dart:developer' as developer;
 import 'database_service.dart';
 import 'package:chiyuhada_vita_buddy/models/workout_data.dart';
@@ -11,12 +12,17 @@ import 'package:chiyuhada_vita_buddy/models/workout_data.dart';
 /// Android Health Connect와 iOS HealthKit을 통합하여
 /// 운동 데이터를 가져오고 데이터베이스에 동기화합니다.
 ///
-/// NOTE: 현재 Health 패키지 제거로 임시 구현.
-/// 실제 Health Connect 연동은 MethodChannel로 구현.
+/// 플랫폼별 지원:
+/// - Android: Health Connect API
+/// - iOS: HealthKit API
 class HealthDataService {
   static const MethodChannel _platform = MethodChannel(
     'com.example.health_connect',
   );
+
+  /// 플랫폼 확인 헬퍼
+  bool get isAndroid => Platform.isAndroid;
+  bool get isIOS => Platform.isIOS;
 
   /// Health Connect 앱 설치 상태 확인 (1: 설치됨, 2: 업데이트 필요, 0: 미설치)
   Future<int> checkHealthConnectStatus() async {
@@ -55,48 +61,91 @@ class HealthDataService {
     }
   }
 
-  /// 헬스 데이터 접근 권한 요청 (임시 구현)
+  /// 헬스 데이터 접근 권한 요청 (크로스플랫폼)
   Future<bool> requestPermissions() async {
     try {
-      // 필수 권한: 활동 인식 (이것만 있어도 일단 진행 가능)
+      developer.log('🔐 헬스 데이터 권한 요청 시작 (플랫폼: ${isAndroid ? 'Android' : isIOS ? 'iOS' : 'Unknown'})');
+
+      // 플랫폼별 권한 요청
+      if (isAndroid) {
+        return await _requestAndroidPermissions();
+      } else if (isIOS) {
+        return await _requestIOSPermissions();
+      } else {
+        developer.log('⚠️ 지원하지 않는 플랫폼');
+        return false;
+      }
+    } catch (e) {
+      developer.log('❌ 권한 요청 중 예외 발생: $e');
+      return false;
+    }
+  }
+
+  /// Android 권한 요청
+  Future<bool> _requestAndroidPermissions() async {
+    try {
+      // 필수 권한: 활동 인식 (Android)
       final activityStatus = await Permission.activityRecognition.request();
 
       // 선택 권한: 신체 센서 (거부되어도 진행 허용)
       final bodySensorsStatus = await Permission.sensors.request();
 
-      // 활동 인식 권한이 승인되었으면 성공으로 간주
-      final isEssentialGranted = activityStatus.isGranted;
-
       developer.log(
-        '📋 권한 요청 결과: 필수(활동인식)=${activityStatus.isGranted}, 선택(센서)=${bodySensorsStatus.isGranted}',
+        '📋 Android 권한 요청 결과: 필수(활동인식)=${activityStatus.isGranted}, 선택(센서)=${bodySensorsStatus.isGranted}',
       );
 
-      if (isEssentialGranted) {
-        // OS 권한이 승인되면 실제 헬스 커넥트 데이터 권한 요청
-        developer.log('🔗 OS 권한 확보됨. 실제 헬스 커넥트 데이터 권한 요청 시작');
+      if (activityStatus.isGranted) {
+        // OS 권한이 승인되면 실제 Health Connect 데이터 권한 요청
+        developer.log('🔗 Android OS 권한 확보됨. Health Connect 데이터 권한 요청 시작');
 
         final healthConnectGranted = await requestHealthConnectPermissions();
 
         if (healthConnectGranted) {
           // 권한이 최종 승인되면 캐시 저장
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('health_permission_granted', true);
-          await prefs.setInt(
-            'health_permission_check_time',
-            DateTime.now().millisecondsSinceEpoch,
-          );
-          developer.log('💾 모든 권한 확보 및 캐시 저장 완료');
+          await _savePermissionCache(true);
+          developer.log('💾 Android 모든 권한 확보 및 캐시 저장 완료');
           return true;
         } else {
-          developer.log('⚠️ 헬스 커넥트 데이터 권한이 거부되었습니다.');
+          developer.log('⚠️ Health Connect 데이터 권한이 거부되었습니다.');
           return false;
         }
       }
 
-      developer.log('⚠️ 필수 OS 권한(활동 인식)이 거부되었습니다.');
+      developer.log('⚠️ Android 필수 OS 권한(활동 인식)이 거부되었습니다.');
       return false;
     } catch (e) {
-      developer.log('❌ 권한 요청 중 예외 발생: $e');
+      developer.log('❌ Android 권한 요청 중 예외 발생: $e');
+      return false;
+    }
+  }
+
+  /// iOS 권한 요청
+  Future<bool> _requestIOSPermissions() async {
+    try {
+      developer.log('🍎 iOS HealthKit 권한 요청 시작');
+
+      // iOS에서는 MethodChannel을 통해 HealthKit 권한 요청
+      final dynamic response = await _platform.invokeMethod('requestIOSHealthKitPermissions');
+
+      bool isGranted = false;
+      if (response is bool) {
+        isGranted = response;
+      }
+
+      developer.log('📋 iOS 권한 요청 결과: $isGranted');
+
+      if (isGranted) {
+        // 권한 승인되면 캐시 저장
+        await _savePermissionCache(true);
+        await markPermissionRequested(); // ✅ 요청 이력 저장 (Optimistic Check용)
+        developer.log('💾 iOS HealthKit 권한 확보 및 캐시 저장 완료');
+        return true;
+      } else {
+        developer.log('⚠️ iOS HealthKit 권한이 거부되었습니다.');
+        return false;
+      }
+    } catch (e) {
+      developer.log('❌ iOS 권한 요청 중 예외 발생: $e');
       return false;
     }
   }
@@ -124,23 +173,38 @@ class HealthDataService {
     }
   }
 
-  /// 헬스 데이터 권한 확인
+  /// 헬스 데이터 권한 확인 (크로스플랫폼)
   Future<bool> hasPermissions() async {
     try {
-      developer.log('🔍 헬스 데이터 권한 확인 중');
+      developer.log('🔍 헬스 데이터 권한 확인 중 (플랫폼: ${isAndroid ? 'Android' : isIOS ? 'iOS' : 'Unknown'})');
 
-      // 1. OS 레벨 권한 확인 (활동 인식 필수, 신체 센서는 선택적)
+      if (isAndroid) {
+        return await _hasAndroidPermissions();
+      } else if (isIOS) {
+        return await _hasIOSPermissions();
+      } else {
+        developer.log('⚠️ 지원하지 않는 플랫폼');
+        return false;
+      }
+    } catch (e) {
+      developer.log('❌ 권한 확인 실패: $e');
+      return false;
+    }
+  }
+
+  /// Android 권한 확인
+  Future<bool> _hasAndroidPermissions() async {
+    try {
+      // 1. OS 레벨 권한 확인 (활동 인식 필수)
       final activityStatus = await Permission.activityRecognition.status;
-      // final bodySensorsStatus = await Permission.sensors.status;
 
-      // 활동 인식 권한이 없으면 무조건 false (센서는 워치 없으면 거부될 수 있으므로 필수에서 제외)
       if (!activityStatus.isGranted) {
-        developer.log('⚠️ 활동 인식 권한 없음');
+        developer.log('⚠️ Android 활동 인식 권한 없음');
         return false;
       }
 
-      // 2. 실제 헬스 커넥트 데이터 권한 확인 (MethodChannel)
-      developer.log('🔍 헬스 커넥트 데이터 권한 상태 확인 (MethodChannel)');
+      // 2. Health Connect 데이터 권한 확인
+      developer.log('🔍 Android Health Connect 데이터 권한 상태 확인');
       final dynamic response = await _platform.invokeMethod(
         'getHealthConnectPermissionsStatus',
       );
@@ -152,11 +216,84 @@ class HealthDataService {
         isDataGranted = response == 1;
       }
 
-      developer.log('✅ 최종 권한 확인 결과: OS=OK, Data=$isDataGranted');
+      developer.log('✅ Android 최종 권한 확인 결과: OS=OK, Data=$isDataGranted');
       return isDataGranted;
     } catch (e) {
-      developer.log('❌ 권한 확인 실패: $e');
+      developer.log('❌ Android 권한 확인 실패: $e');
       return false;
+    }
+  }
+
+  /// iOS 권한 확인
+  Future<bool> _hasIOSPermissions() async {
+    try {
+      developer.log('🍎 iOS HealthKit 권한 상태 확인');
+
+      // iOS에서는 MethodChannel을 통해 HealthKit 권한 상태 확인
+      final dynamic response = await _platform.invokeMethod(
+        'getIOSHealthKitPermissionsStatus',
+      );
+
+      bool isGranted = false;
+      if (response is bool) {
+        isGranted = response;
+      }
+
+      // [iOS 특화 로직] Native 체크가 실패하더라도, 요청 이력이 있으면 권한이 있다고 가정(Optimistic Check)
+      // 이유: iOS는 읽기 권한 상태를 알려주지 않으므로, 쓰기 권한이 없으면 무조건 false로 나옴
+      if (!isGranted) {
+        final hasRequestedBefore = await checkIfPermissionRequested();
+        if (hasRequestedBefore) {
+          developer.log(
+            '⚠️ iOS Native 권한 확인 실패 -> 과거 요청 이력 기반으로 권한 있음(True) 처리 (Optimistic Check)',
+          );
+          return true;
+        }
+      }
+
+      developer.log('✅ iOS HealthKit 권한 확인 결과: $isGranted');
+      return isGranted;
+    } catch (e) {
+      developer.log('❌ iOS 권한 확인 실패: $e');
+      return false;
+    }
+  }
+
+  /// 권한 캐시 저장 헬퍼 메서드
+  Future<void> _savePermissionCache(bool granted) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('health_permission_granted', granted);
+      await prefs.setInt(
+        'health_permission_check_time',
+        DateTime.now().millisecondsSinceEpoch,
+      );
+      await prefs.setString('health_platform', isAndroid ? 'android' : isIOS ? 'ios' : 'unknown');
+      developer.log('💾 권한 캐시 저장 완료: $granted (플랫폼: ${isAndroid ? 'Android' : isIOS ? 'iOS' : 'Unknown'})');
+    } catch (e) {
+      developer.log('⚠️ 캐시 저장 실패: $e');
+    }
+  }
+
+  /// 권한 요청 이력이 있는지 확인
+  Future<bool> checkIfPermissionRequested() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('health_permission_requested_v1') ?? false;
+    } catch (e) {
+      developer.log('⚠️ 권한 요청 이력 확인 실패: $e');
+      return false;
+    }
+  }
+
+  /// 권한 요청 이력 저장 (다시 묻지 않음)
+  Future<void> markPermissionRequested() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('health_permission_requested_v1', true);
+      developer.log('💾 권한 요청 이력 저장 완료');
+    } catch (e) {
+      developer.log('⚠️ 권한 요청 이력 저장 실패: $e');
     }
   }
 
@@ -166,6 +303,8 @@ class HealthDataService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('health_permission_granted');
       await prefs.remove('health_permission_check_time');
+      await prefs.remove('health_platform');
+      await prefs.remove('health_permission_requested_v1'); // 요청 이력도 초기화
       developer.log('🗑️ 권한 캐시 초기화 완료');
     } catch (e) {
       developer.log('⚠️ 캐시 초기화 실패: $e');

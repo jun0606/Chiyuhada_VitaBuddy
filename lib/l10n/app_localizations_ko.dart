@@ -1897,6 +1897,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get checkingCameraPermission => '카메라 권한을 확인하는 중...';
 
   @override
+  String get cameraPermissionRequestFailed => '카메라 권한 요청에 실패했습니다.';
+
+  @override
+  String get cameraPermissionPermanentlyDenied =>
+      '카메라 권한이 영구적으로 거부되었습니다. 설정 앱에서 권한을 허용해주세요.';
+
+  @override
+  String get cameraPermissionDenied => '카메라 권한이 거부되었습니다.';
+
+  @override
+  String get cameraPermissionUnknown => '카메라 권한 상태를 확인할 수 없습니다.';
+
+  @override
   String get brandLabel => '브랜드';
 
   @override

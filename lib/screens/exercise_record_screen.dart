@@ -74,11 +74,32 @@ class _ExerciseRecordScreenState extends State<ExerciseRecordScreen>
         _isLoading = false;
       });
 
-      // 헬스 데이터에서 걸음 수 가져오기 (백그라운드, 권한 확인)
+      // 수동 입력된 칼로리 계산
+      final manualCalories = exercises.where((record) {
+        final source = record['source'] ?? 'manual';
+        return source.toString().toLowerCase() == 'manual';
+      }).fold<double>(0.0, (sum, record) {
+        return sum + (record['calories_burned'] as num? ?? 0.0).toDouble();
+      });
+
+      // 헬스 데이터에서 걸음 수 및 칼로리 가져오기 (백그라운드, 권한 확인)
       final hasPermission = await _healthService.hasPermissions();
       if (hasPermission) {
         final steps = await _healthService.getTodaySteps();
-        setState(() => _todaySteps = steps);
+        final healthKitCalories = await _healthService.getTodayCaloriesBurned();
+        
+        setState(() {
+          _todaySteps = steps;
+          // HealthKit(활동량+웨어러블) + 수동 입력(DB) 합산
+          if (healthKitCalories > 0) {
+            _todayCalories = healthKitCalories + manualCalories;
+          } else {
+            // HealthKit 데이터가 없으면 기존 DB 합계 사용
+            // (이미 위에서 _todayCalories = burnedCalories 로 초기화됨)
+          }
+        });
+        
+        developer.log('📊 칼로리 계산: HealthKit($healthKitCalories) + Manual($manualCalories) = $_todayCalories');
       }
     } catch (e) {
       developer.log('❌ 운동 데이터 로드 실패: $e');

@@ -749,6 +749,10 @@
   "confidenceLabel": "Confidence",
   "scanCountLabel": "Scan Count",
   "checkingCameraPermission": "Checking camera permission...",
+  "cameraPermissionRequestFailed": "Camera permission request failed.",
+  "cameraPermissionPermanentlyDenied": "Camera permission has been permanently denied. Please allow it in the settings app.",
+  "cameraPermissionDenied": "Camera permission denied.",
+  "cameraPermissionUnknown": "Camera permission status unknown.",
   "brandLabel": "Brand",
   "apiResultsFound": "Found {count} results in total.",
   "@apiResultsFound": {

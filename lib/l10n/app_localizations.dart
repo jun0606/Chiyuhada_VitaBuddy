@@ -3716,6 +3716,30 @@ abstract class AppLocalizations {
   /// **'카메라 권한을 확인하는 중...'**
   String get checkingCameraPermission;
 
+  /// No description provided for @cameraPermissionRequestFailed.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 권한 요청에 실패했습니다.'**
+  String get cameraPermissionRequestFailed;
+
+  /// No description provided for @cameraPermissionPermanentlyDenied.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 권한이 영구적으로 거부되었습니다. 설정 앱에서 권한을 허용해주세요.'**
+  String get cameraPermissionPermanentlyDenied;
+
+  /// No description provided for @cameraPermissionDenied.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 권한이 거부되었습니다.'**
+  String get cameraPermissionDenied;
+
+  /// No description provided for @cameraPermissionUnknown.
+  ///
+  /// In ko, this message translates to:
+  /// **'카메라 권한 상태를 확인할 수 없습니다.'**
+  String get cameraPermissionUnknown;
+
   /// No description provided for @brandLabel.
   ///
   /// In ko, this message translates to:

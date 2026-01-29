@@ -64,11 +64,21 @@ class _SplashScreenState extends State<SplashScreen>
     if (appProvider.isProfileComplete) {
       // 프로필이 완성된 경우 헬스 데이터 권한 확인
       final healthService = HealthDataService();
-      final hasPermission = await healthService.hasPermissions();
-
-      if (!hasPermission && mounted) {
-        // 권한이 없으면 다이얼로그 표시
-        await _showHealthPermissionDialog();
+      
+      // 1. 이미 권한을 요청한 적이 있는지 확인
+      final hasRequestedBefore = await healthService.checkIfPermissionRequested();
+      
+      if (!hasRequestedBefore) {
+        // 2. 요청한 적이 없으면 권한 상태 확인 후 다이얼로그 표시
+        final hasPermission = await healthService.hasPermissions();
+        if (!hasPermission && mounted) {
+           await _showHealthPermissionDialog();
+           // 다이얼로그가 닫히면(거부했더라도) 요청한 것으로 간주하고 플래그 저장
+           await healthService.markPermissionRequested();
+        }
+      } else {
+        // 이미 요청한 적이 있으면, 권한이 없더라도 조용히 넘어감 (로그만 남김)
+        print('ℹ️ 헬스 권한 요청 이력 있음 - 다이얼로그 건너뜀');
       }
 
       if (mounted) {

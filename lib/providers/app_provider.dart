@@ -124,7 +124,8 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
   double get currentBurnedCalories {
     // 1. Health Connect 실시간 활동량 우선 (가장 정확함)
     if (_activityCalories > 0) {
-      return _activityCalories;
+      // HealthKit 활동량 + 수동 기록 합산 (버그 수정)
+      return _activityCalories + _manualExerciseBurnedCalories;
     }
 
     // 2. 수동 기록된 운동 칼로리 (Health Connect 미사용 시)
@@ -327,8 +328,8 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
       // 헬스 데이터 동기화
       syncHealthData();
 
-      // 웨어러블 상태 확인
-      checkWearableStatus();
+      // 웨어러블 상태 확인 (권한 상태 동기화 대기)
+      await checkWearableStatus();
 
       // 백그라운드 서비스 초기화
       await _initializeBackgroundService();
@@ -402,6 +403,7 @@ class AppProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // 데이터 새로고침 및 자동 동기화
       _loadTodayCalories();
+      checkWearableStatus(); // 앱 복귀 시 권한/연결 상태 재확인
       syncHealthData(); // 앱 복귀 시 자동 동기화 트리거
       notifyListeners();
     }
